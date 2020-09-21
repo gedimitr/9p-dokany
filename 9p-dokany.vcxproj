@@ -100,9 +100,13 @@
   <ItemGroup>
     <ClCompile Include="9pfs.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="protocol\TxMessage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
+    <ClInclude Include="protocol\DataTypes.h" />
+    <ClInclude Include="protocol\MessageTags.h" />
+    <ClInclude Include="protocol\TxMessage.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="deps\dokany\dokan\dokan.vcxproj">
