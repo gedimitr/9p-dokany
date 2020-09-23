@@ -22,6 +22,6 @@
 
 #include <cstdint>
 
-typedef std::uint32_t MsgLength;
+typedef uint32_t MsgLength;
 
-typedef std::uint8_t MsgTag;
+typedef uint8_t MsgTag;

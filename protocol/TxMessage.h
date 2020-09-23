@@ -20,8 +20,6 @@
  */
 #pragma once
 
-#include <type_traits>
-
 #include "DataTypes.h"
 
 class TxMessage
@@ -40,6 +38,9 @@ public:
 	template <typename T>
 	void writeInteger(T value);
 
+	struct Data;
+    Data getData() const;
+
 private:
 	void resetCursor();
 
@@ -49,12 +50,10 @@ private:
 	uint8_t* m_cursor;
 };
 
-template<typename T>
-inline void TxMessage::writeInteger(T value)
-{
-	static_assert(std::is_integral_v<T>, "Integer type required");
-	for (int i = 0; i < sizeof(T); i++) {
-		uint8_t octet = (value >> (8 * i)) & 0xff;
-		writeOctet(octet);
-	}
-}
+
+struct TxMessage::Data {
+  Data(const uint8_t* buffer, int size);
+
+  const uint8_t* buffer;
+  int size;
+};

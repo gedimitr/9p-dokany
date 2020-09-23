@@ -20,12 +20,42 @@
  */
 #include "TxMessage.h"
 
+#include <cassert>
+#include <type_traits>
+
+namespace {
+
+template<typename T>
+inline uint8_t extractLowEndianByte(T value, int pos)
+{
+    static_assert(std::is_integral_v<T>, "Integer type required as first argument");
+	assert(pos < sizeof(T));
+
+	// When signed integers are right shifted, behaviour is implementation dependent. However, since we are not going
+	// to use any of the bits that will be shifted in, it doesn't matter if arithmetic / logical shifting is done.
+
+	int shift_bits = 8 * pos;
+	return (value >> shift_bits) & 0xff;
+}
+
+template<typename T>
+inline void writeLowEndianInteger(T value, uint8_t* buffer)
+{
+	static_assert(std::is_integral_v<T>, "Integer type required as first argument");
+
+	for (int i = 0; i < sizeof(T); i++) {
+		uint8_t byte = extractLowEndianByte(value, i);
+		*buffer++ = byte;
+	}
+}
+
+} // anonymous namespace
+
 TxMessage::TxMessage(int capacity) :
 	m_buffer(new uint8_t[capacity]),
-	m_capacity(capacity),
-	m_cursor(m_buffer)
+	m_capacity(capacity)
 {
-	resetCursor();
+  resetCursor();
 }
 
 TxMessage::~TxMessage()
@@ -44,7 +74,33 @@ void TxMessage::writeOctet(uint8_t value)
 	*m_cursor++ = value;
 }
 
+template<typename T>
+void TxMessage::writeInteger(T value)
+{
+	static_assert(std::is_integral_v<T>, "Integer type required as argument");
+
+	writeLowEndianInteger(value, m_cursor);
+	m_cursor += sizeof(T);
+}
+
+TxMessage::Data TxMessage::getData() const
+{
+	MsgLength size = static_cast<MsgLength>(m_cursor - m_buffer);
+	writeLowEndianInteger<MsgLength>(size, m_buffer);
+
+	return Data(m_buffer, size);
+}
+
 void TxMessage::resetCursor()
 {
 	m_cursor = m_buffer + sizeof(MsgLength);
 }
+
+TxMessage::Data::Data(const uint8_t* buffer, int size) :
+	buffer(buffer),
+	size(size) { }
+
+// Explicit template instantiation of writeInteger method for different integer types
+template void TxMessage::writeInteger<uint8_t>(uint8_t);
+template void TxMessage::writeInteger<uint16_t>(uint16_t);
+template void TxMessage::writeInteger<uint32_t>(uint32_t);
