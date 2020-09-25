@@ -21,8 +21,21 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
-typedef uint32_t MsgLength;
+#include "DataTypes.h"
 
-typedef uint8_t MsgType;
-typedef uint16_t MsgTag;
+class TxMessage;
+
+class TxMessageBuilder
+{
+public:
+	TxMessageBuilder(TxMessage* tx_message);
+
+	void buildTVersion(uint32_t msize, const std::string &version);
+	void buildRVersion(MsgTag tag, uint32_t msize, const std::string& version);
+
+private:
+	TxMessage* m_tx_message;
+};
+

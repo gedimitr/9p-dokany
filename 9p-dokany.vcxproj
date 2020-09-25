@@ -57,7 +57,7 @@
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_ENABLE_ATOMIC_ALIGNMENT_FIX;SPDLOG_WCHAR_TO_UTF8_SUPPORT</PreprocessorDefinitions>
@@ -101,12 +101,14 @@
     <ClCompile Include="9pfs.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol\TxMessage.cpp" />
+    <ClCompile Include="protocol\TxMessageBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
     <ClInclude Include="protocol\DataTypes.h" />
-    <ClInclude Include="protocol\MessageTags.h" />
+    <ClInclude Include="protocol\MessageTypes.h" />
     <ClInclude Include="protocol\TxMessage.h" />
+    <ClInclude Include="protocol\TxMessageBuilder.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="deps\dokany\dokan\dokan.vcxproj">

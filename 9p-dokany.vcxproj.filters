@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="9pfs.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="protocol\TxMessage.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="protocol\TxMessageBuilder.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="9pfs.h" />
+    <ClInclude Include="protocol\DataTypes.h" />
+    <ClInclude Include="protocol\TxMessage.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol\MessageTypes.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol\TxMessageBuilder.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="protocol">
+      <UniqueIdentifier>{4733777b-0802-4232-8760-dd27ffb68119}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

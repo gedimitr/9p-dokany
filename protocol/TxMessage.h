@@ -22,6 +22,8 @@
 
 #include "DataTypes.h"
 
+#include <string>
+
 class TxMessage
 {
 public:
@@ -31,12 +33,17 @@ public:
 	TxMessage(const TxMessage&) = delete;
 	TxMessage& operator=(const TxMessage&) = delete;
 
-	void initialize(MsgTag msg_tag);
+	void initialize(MsgType msg_tag);
 
 	void writeOctet(uint8_t value);
 
 	template <typename T>
 	void writeInteger(T value);
+	
+	void writeData(const char* data, uint16_t len);
+	void writeString(const std::string& str);
+
+	bool hasRoomFor(size_t num_bytes) const;
 
 	struct Data;
     Data getData() const;
@@ -45,7 +52,7 @@ private:
 	void resetCursor();
 
 	uint8_t* m_buffer;
-	int m_capacity;
+	uint8_t *m_buffer_end;
 
 	uint8_t* m_cursor;
 };

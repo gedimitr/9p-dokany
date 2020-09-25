@@ -18,11 +18,32 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#pragma once
+#include "TxMessageBuilder.h"
 
-#include <cstdint>
+#include "MessageTypes.h"
+#include "TxMessage.h"
 
-typedef uint32_t MsgLength;
+TxMessageBuilder::TxMessageBuilder(TxMessage* tx_message) :
+	m_tx_message(tx_message) { }
 
-typedef uint8_t MsgType;
-typedef uint16_t MsgTag;
+void TxMessageBuilder::buildTVersion(uint32_t msize, const std::string &version)
+{
+	m_tx_message->initialize(msg_type::TVersion);
+
+	MsgTag tag = static_cast<MsgTag>(~0);
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(msize);
+	m_tx_message->writeString(version);
+}
+
+void TxMessageBuilder::buildRVersion(MsgTag tag, uint32_t msize, const std::string& version)
+{
+	m_tx_message->initialize(msg_type::RVersion);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(msize);
+	m_tx_message->writeString(version);
+}
+
+
+

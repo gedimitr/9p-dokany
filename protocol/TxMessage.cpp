@@ -21,6 +21,8 @@
 #include "TxMessage.h"
 
 #include <cassert>
+#include <cstring>
+#include <limits>
 #include <type_traits>
 
 namespace {
@@ -53,7 +55,7 @@ inline void writeLowEndianInteger(T value, uint8_t* buffer)
 
 TxMessage::TxMessage(int capacity) :
 	m_buffer(new uint8_t[capacity]),
-	m_capacity(capacity)
+	m_buffer_end(m_buffer + capacity)
 {
   resetCursor();
 }
@@ -63,10 +65,10 @@ TxMessage::~TxMessage()
 	delete[] m_buffer;
 }
 
-void TxMessage::initialize(MsgTag msg_tag)
+void TxMessage::initialize(MsgType type)
 {
 	resetCursor();
-	writeInteger(msg_tag);
+	writeInteger(type);
 }
 
 void TxMessage::writeOctet(uint8_t value)
@@ -81,6 +83,30 @@ void TxMessage::writeInteger(T value)
 
 	writeLowEndianInteger(value, m_cursor);
 	m_cursor += sizeof(T);
+}
+
+void TxMessage::writeData(const char* data, uint16_t len)
+{
+	writeInteger(len);
+
+	memcpy(m_cursor, data, len);
+	m_cursor += len;
+}
+
+void TxMessage::writeString(const std::string& str)
+{
+	size_t str_size = str.size();
+	if (!hasRoomFor(str_size) || str_size > std::numeric_limits<uint16_t>::max()) {
+		return;
+	}
+
+	uint16_t str_len = static_cast<uint16_t>(str_size);
+	writeData(str.c_str(), str_len);
+}
+
+bool TxMessage::hasRoomFor(size_t num_bytes) const
+{
+	return m_buffer + num_bytes <= m_buffer_end;
 }
 
 TxMessage::Data TxMessage::getData() const
@@ -104,3 +130,4 @@ TxMessage::Data::Data(const uint8_t* buffer, int size) :
 template void TxMessage::writeInteger<uint8_t>(uint8_t);
 template void TxMessage::writeInteger<uint16_t>(uint16_t);
 template void TxMessage::writeInteger<uint32_t>(uint32_t);
+template void TxMessage::writeInteger<uint64_t>(uint64_t);
