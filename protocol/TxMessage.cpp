@@ -93,7 +93,7 @@ void TxMessage::writeData(const char* data, uint16_t len)
 	m_cursor += len;
 }
 
-void TxMessage::writeString(const std::string& str)
+void TxMessage::writeString(const std::string_view& str)
 {
 	size_t str_size = str.size();
 	if (!hasRoomFor(str_size) || str_size > std::numeric_limits<uint16_t>::max()) {
@@ -101,7 +101,7 @@ void TxMessage::writeString(const std::string& str)
 	}
 
 	uint16_t str_len = static_cast<uint16_t>(str_size);
-	writeData(str.c_str(), str_len);
+	writeData(str.data(), str_len);
 }
 
 bool TxMessage::hasRoomFor(size_t num_bytes) const

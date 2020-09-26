@@ -32,8 +32,9 @@ class TxMessageBuilder
 public:
 	TxMessageBuilder(TxMessage* tx_message);
 
-	void buildTVersion(uint32_t msize, const std::string &version);
-	void buildRVersion(MsgTag tag, uint32_t msize, const std::string& version);
+	void buildTVersion(uint32_t msize, const std::string_view &version);
+
+	void buildTAuth(MsgTag tag, uint32_t afid, const std::string_view& uname, const std::string& aname);
 
 private:
 	TxMessage* m_tx_message;

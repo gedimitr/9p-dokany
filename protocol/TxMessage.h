@@ -41,7 +41,7 @@ public:
 	void writeInteger(T value);
 	
 	void writeData(const char* data, uint16_t len);
-	void writeString(const std::string& str);
+	void writeString(const std::string_view& str);
 
 	bool hasRoomFor(size_t num_bytes) const;
 

@@ -26,7 +26,7 @@
 TxMessageBuilder::TxMessageBuilder(TxMessage* tx_message) :
 	m_tx_message(tx_message) { }
 
-void TxMessageBuilder::buildTVersion(uint32_t msize, const std::string &version)
+void TxMessageBuilder::buildTVersion(uint32_t msize, const std::string_view &version)
 {
 	m_tx_message->initialize(msg_type::TVersion);
 
@@ -36,14 +36,12 @@ void TxMessageBuilder::buildTVersion(uint32_t msize, const std::string &version)
 	m_tx_message->writeString(version);
 }
 
-void TxMessageBuilder::buildRVersion(MsgTag tag, uint32_t msize, const std::string& version)
+void TxMessageBuilder::buildTAuth(MsgTag tag, uint32_t afid, const std::string_view& uname, const std::string& aname)
 {
-	m_tx_message->initialize(msg_type::RVersion);
+	m_tx_message->initialize(msg_type::TAuth);
 
 	m_tx_message->writeInteger(tag);
-	m_tx_message->writeInteger(msize);
-	m_tx_message->writeString(version);
+	m_tx_message->writeInteger(afid);
+	m_tx_message->writeString(uname);
+	m_tx_message->writeString(aname);
 }
-
-
-
