@@ -30,13 +30,13 @@ void TxMessageBuilder::buildTVersion(uint32_t msize, const std::string_view &ver
 {
 	m_tx_message->initialize(msg_type::TVersion);
 
-	MsgTag tag = static_cast<MsgTag>(~0);
+	Tag tag = static_cast<Tag>(~0);
 	m_tx_message->writeInteger(tag);
 	m_tx_message->writeInteger(msize);
 	m_tx_message->writeString(version);
 }
 
-void TxMessageBuilder::buildTAuth(MsgTag tag, uint32_t afid, const std::string_view& uname, const std::string& aname)
+void TxMessageBuilder::buildTAuth(Tag tag, Fid afid, const std::string_view& uname, const std::string_view& aname)
 {
 	m_tx_message->initialize(msg_type::TAuth);
 
@@ -44,4 +44,59 @@ void TxMessageBuilder::buildTAuth(MsgTag tag, uint32_t afid, const std::string_v
 	m_tx_message->writeInteger(afid);
 	m_tx_message->writeString(uname);
 	m_tx_message->writeString(aname);
+}
+
+void TxMessageBuilder::buildTFlush(Tag tag, Tag oldtag)
+{
+	m_tx_message->initialize(msg_type::TFlush);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(oldtag);
+}
+
+void TxMessageBuilder::buildTAttach(Tag tag, Fid fid, Fid afid, const std::string_view& uname,
+									const std::string_view& aname)
+{
+	m_tx_message->initialize(msg_type::TAttach);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+	m_tx_message->writeInteger(afid);
+	m_tx_message->writeString(uname);
+	m_tx_message->writeString(aname);
+}
+
+void TxMessageBuilder::buildTWalk(Tag tag, Fid fid, Fid newfid, const std::vector<std::string_view>& wnames)
+{
+	m_tx_message->initialize(msg_type::TWalk);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+	m_tx_message->writeInteger(newfid);
+
+	uint16_t num_wnames = static_cast<uint16_t>(wnames.size());
+	m_tx_message->writeInteger(num_wnames);
+	for (auto const& run_wname : wnames) {
+		m_tx_message->writeString(run_wname);
+	}
+}
+
+void TxMessageBuilder::buildTOpen(Tag tag, Fid fid, uint8_t mode)
+{
+	m_tx_message->initialize(msg_type::TOpen);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+	m_tx_message->writeInteger(mode);
+}
+
+void TxMessageBuilder::buildTCreate(Tag tag, Fid fid, const std::string_view& name, uint32_t perm, uint8_t mode)
+{
+	m_tx_message->initialize(msg_type::TCreate);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+	m_tx_message->writeString(name);
+	m_tx_message->writeInteger(perm);
+	m_tx_message->writeInteger(mode);
 }

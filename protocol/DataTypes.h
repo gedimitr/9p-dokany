@@ -25,4 +25,5 @@
 typedef uint32_t MsgLength;
 
 typedef uint8_t MsgType;
-typedef uint16_t MsgTag;
+typedef uint16_t Tag;
+typedef uint32_t Fid;
