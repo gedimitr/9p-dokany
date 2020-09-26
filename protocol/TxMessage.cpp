@@ -28,7 +28,7 @@
 namespace {
 
 template<typename T>
-inline uint8_t extractLowEndianByte(T value, int pos)
+inline char extractLowEndianByte(T value, int pos)
 {
     static_assert(std::is_integral_v<T>, "Integer type required as first argument");
 	assert(pos < sizeof(T));
@@ -41,12 +41,12 @@ inline uint8_t extractLowEndianByte(T value, int pos)
 }
 
 template<typename T>
-inline void writeLowEndianInteger(T value, uint8_t* buffer)
+inline void writeLowEndianInteger(T value, char* buffer)
 {
 	static_assert(std::is_integral_v<T>, "Integer type required as first argument");
 
 	for (int i = 0; i < sizeof(T); i++) {
-		uint8_t byte = extractLowEndianByte(value, i);
+		char byte = extractLowEndianByte(value, i);
 		*buffer++ = byte;
 	}
 }
@@ -54,7 +54,7 @@ inline void writeLowEndianInteger(T value, uint8_t* buffer)
 } // anonymous namespace
 
 TxMessage::TxMessage(int capacity) :
-	m_buffer(new uint8_t[capacity]),
+	m_buffer(new char[capacity]),
 	m_buffer_end(m_buffer + capacity)
 {
   resetCursor();
@@ -85,12 +85,12 @@ void TxMessage::writeInteger(T value)
 	m_cursor += sizeof(T);
 }
 
-void TxMessage::writeData(const char* data, uint16_t len)
+void TxMessage::writeRawData(const std::string_view &data)
 {
-	writeInteger(len);
+	size_t data_len = data.length();
 
-	memcpy(m_cursor, data, len);
-	m_cursor += len;
+	memcpy(m_cursor, data.data(), data_len);
+	m_cursor += data_len;
 }
 
 void TxMessage::writeString(const std::string_view& str)
@@ -101,7 +101,8 @@ void TxMessage::writeString(const std::string_view& str)
 	}
 
 	uint16_t str_len = static_cast<uint16_t>(str_size);
-	writeData(str.data(), str_len);
+	writeInteger(str_len);
+	writeRawData(str);
 }
 
 bool TxMessage::hasRoomFor(size_t num_bytes) const
@@ -109,22 +110,18 @@ bool TxMessage::hasRoomFor(size_t num_bytes) const
 	return m_buffer + num_bytes <= m_buffer_end;
 }
 
-TxMessage::Data TxMessage::getData() const
+std::string_view TxMessage::getData() const
 {
 	MsgLength size = static_cast<MsgLength>(m_cursor - m_buffer);
 	writeLowEndianInteger<MsgLength>(size, m_buffer);
 
-	return Data(m_buffer, size);
+	return std::string_view(m_buffer, size);
 }
 
 void TxMessage::resetCursor()
 {
 	m_cursor = m_buffer + sizeof(MsgLength);
 }
-
-TxMessage::Data::Data(const uint8_t* buffer, int size) :
-	buffer(buffer),
-	size(size) { }
 
 // Explicit template instantiation of writeInteger method for different integer types
 template void TxMessage::writeInteger<uint8_t>(uint8_t);

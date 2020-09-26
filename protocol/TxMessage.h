@@ -22,7 +22,7 @@
 
 #include "DataTypes.h"
 
-#include <string>
+#include <string_view>
 
 class TxMessage
 {
@@ -40,27 +40,18 @@ public:
 	template <typename T>
 	void writeInteger(T value);
 	
-	void writeData(const char* data, uint16_t len);
+	void writeRawData(const std::string_view &data);
 	void writeString(const std::string_view& str);
 
 	bool hasRoomFor(size_t num_bytes) const;
 
-	struct Data;
-    Data getData() const;
+    std::string_view getData() const;
 
 private:
 	void resetCursor();
 
-	uint8_t* m_buffer;
-	uint8_t *m_buffer_end;
+	char* m_buffer;
+	char* m_buffer_end;
 
-	uint8_t* m_cursor;
-};
-
-
-struct TxMessage::Data {
-  Data(const uint8_t* buffer, int size);
-
-  const uint8_t* buffer;
-  int size;
+	char* m_cursor;
 };

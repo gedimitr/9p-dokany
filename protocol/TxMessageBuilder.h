@@ -40,6 +40,11 @@ public:
 	void buildTWalk(Tag tag, Fid fid, Fid newfid, const std::vector<std::string_view>& wnames);
 	void buildTOpen(Tag tag, Fid fid, uint8_t mode);
 	void buildTCreate(Tag tag, Fid fid, const std::string_view& name, uint32_t perm, uint8_t mode);
+	void buildTRead(Tag tag, Fid fid, uint64_t offset, uint32_t count);
+	void buildTWrite(Tag tag, Fid fid, uint64_t offset, const std::string_view& data);
+	void buildTClunk(Tag tag, Fid fid);
+	void buildTRemove(Tag tag, Fid fid);
+	void buildTStat(Tag tag, Fid fid);
 
 private:
 	TxMessage* m_tx_message;

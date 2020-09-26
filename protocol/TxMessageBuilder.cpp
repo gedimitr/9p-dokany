@@ -100,3 +100,53 @@ void TxMessageBuilder::buildTCreate(Tag tag, Fid fid, const std::string_view& na
 	m_tx_message->writeInteger(perm);
 	m_tx_message->writeInteger(mode);
 }
+
+void TxMessageBuilder::buildTRead(Tag tag, Fid fid, uint64_t offset, uint32_t count)
+{
+	m_tx_message->initialize(msg_type::TRead);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+	m_tx_message->writeInteger(offset);
+	m_tx_message->writeInteger(count);
+}
+
+void TxMessageBuilder::buildTWrite(Tag tag, Fid fid, uint64_t offset, const std::string_view& data)
+{
+	m_tx_message->initialize(msg_type::TWrite);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+	m_tx_message->writeInteger(offset);
+
+	uint32_t count = static_cast<uint32_t>(data.length());
+	m_tx_message->writeInteger(count);
+
+	m_tx_message->writeRawData(data);
+}
+
+void TxMessageBuilder::buildTClunk(Tag tag, Fid fid)
+{
+	m_tx_message->initialize(msg_type::TClunk);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+}
+
+void TxMessageBuilder::buildTRemove(Tag tag, Fid fid)
+{
+	m_tx_message->initialize(msg_type::TRemove);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+}
+
+void TxMessageBuilder::buildTStat(Tag tag, Fid fid)
+{
+	m_tx_message->initialize(msg_type::TStat);
+
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+}
+
+
