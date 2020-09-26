@@ -45,8 +45,12 @@ public:
 	void buildTClunk(Tag tag, Fid fid);
 	void buildTRemove(Tag tag, Fid fid);
 	void buildTStat(Tag tag, Fid fid);
+	void buildTWstat(Tag tag, Fid fid, const Stat& stat);
 
 private:
+	void writeQid(const Qid& qid);
+	void writeStat(const Stat& stat);
+
 	TxMessage* m_tx_message;
 };
 

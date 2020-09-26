@@ -23,6 +23,31 @@
 #include "MessageTypes.h"
 #include "TxMessage.h"
 
+namespace {
+
+size_t getEncodedStringSize(const std::string& str)
+{
+	return sizeof(uint16_t) + str.size();
+}
+
+constexpr size_t getEncodedQidSize()
+{
+	return sizeof(Qid::type) + sizeof(Qid::vers) + sizeof(Qid::path);
+}
+
+size_t getEncodedStatSize(const Stat& stat)
+{
+	return sizeof(Stat::type) + sizeof(Stat::dev) +
+		getEncodedQidSize() +
+		sizeof(Stat::mode) + sizeof(Stat::atime) + sizeof(Stat::mtime) + sizeof(Stat::length) +
+		getEncodedStringSize(stat.name) +
+		getEncodedStringSize(stat.uid) +
+		getEncodedStringSize(stat.gid) +
+		getEncodedStringSize(stat.muid);
+}
+
+}
+
 TxMessageBuilder::TxMessageBuilder(TxMessage* tx_message) :
 	m_tx_message(tx_message) { }
 
@@ -149,4 +174,45 @@ void TxMessageBuilder::buildTStat(Tag tag, Fid fid)
 	m_tx_message->writeInteger(fid);
 }
 
+void TxMessageBuilder::buildTWstat(Tag tag, Fid fid, const Stat& stat)
+{
+	m_tx_message->initialize(msg_type::TWStat);
 
+	m_tx_message->writeInteger(tag);
+	m_tx_message->writeInteger(fid);
+
+	writeStat(stat);
+}
+
+void TxMessageBuilder::writeQid(const Qid& qid)
+{
+	m_tx_message->writeInteger(qid.type);
+	m_tx_message->writeInteger(qid.vers);
+	m_tx_message->writeInteger(qid.path);
+}
+
+void TxMessageBuilder::writeStat(const Stat& stat)
+{
+	size_t stat_len = getEncodedStatSize(stat);
+
+	uint16_t size = static_cast<uint16_t>(stat_len);
+	m_tx_message->writeInteger(size);
+
+	m_tx_message->writeInteger(stat.type);
+	m_tx_message->writeInteger(stat.dev);
+
+	writeQid(stat.qid);
+
+	m_tx_message->writeInteger(stat.mode);
+
+	m_tx_message->writeInteger(stat.atime);
+	m_tx_message->writeInteger(stat.mtime);
+
+	m_tx_message->writeInteger(stat.length);
+
+	m_tx_message->writeString(stat.name);
+
+	m_tx_message->writeString(stat.uid);
+	m_tx_message->writeString(stat.gid);
+	m_tx_message->writeString(stat.muid);
+}
