@@ -35,11 +35,11 @@ constexpr size_t getEncodedQidSize()
 	return sizeof(Qid::type) + sizeof(Qid::vers) + sizeof(Qid::path);
 }
 
-size_t getEncodedStatSize(const Stat& stat)
+size_t getEncodedStatSize(const TStat& stat)
 {
-	return sizeof(Stat::type) + sizeof(Stat::dev) +
+	return sizeof(TStat::type) + sizeof(TStat::dev) +
 		getEncodedQidSize() +
-		sizeof(Stat::mode) + sizeof(Stat::atime) + sizeof(Stat::mtime) + sizeof(Stat::length) +
+		sizeof(TStat::mode) + sizeof(TStat::atime) + sizeof(TStat::mtime) + sizeof(TStat::length) +
 		getEncodedStringSize(stat.name) +
 		getEncodedStringSize(stat.uid) +
 		getEncodedStringSize(stat.gid) +
@@ -174,7 +174,7 @@ void TxMessageBuilder::buildTStat(Tag tag, Fid fid)
 	m_tx_message->writeInteger(fid);
 }
 
-void TxMessageBuilder::buildTWstat(Tag tag, Fid fid, const Stat& stat)
+void TxMessageBuilder::buildTWstat(Tag tag, Fid fid, const TStat& stat)
 {
 	m_tx_message->initialize(msg_type::TWStat);
 
@@ -191,7 +191,7 @@ void TxMessageBuilder::writeQid(const Qid& qid)
 	m_tx_message->writeInteger(qid.path);
 }
 
-void TxMessageBuilder::writeStat(const Stat& stat)
+void TxMessageBuilder::writeStat(const TStat& stat)
 {
 	size_t stat_len = getEncodedStatSize(stat);
 

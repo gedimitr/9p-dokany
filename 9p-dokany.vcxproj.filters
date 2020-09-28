@@ -9,10 +9,13 @@
     <ClCompile Include="protocol\TxMessageBuilder.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
+    <ClCompile Include="MessageReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
-    <ClInclude Include="protocol\DataTypes.h" />
+    <ClInclude Include="protocol\DataTypes.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
     <ClInclude Include="protocol\TxMessage.h">
       <Filter>protocol</Filter>
     </ClInclude>
@@ -22,6 +25,9 @@
     <ClInclude Include="protocol\TxMessageBuilder.h">
       <Filter>protocol</Filter>
     </ClInclude>
+    <ClInclude Include="protocol\MessageReader.h">
+      <Filter>protocol</Filter>
+	</ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="protocol">

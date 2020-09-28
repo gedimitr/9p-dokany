@@ -18,39 +18,9 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#pragma once
+#include "MessageReader.h"
 
-#include <cstdint>
-#include <string>
-
-typedef uint32_t MsgLength;
-
-typedef uint8_t MsgType;
-typedef uint16_t Tag;
-typedef uint32_t Fid;
-
-struct Qid
+ParsedRMessage parseMessage(const std::string_view& msg)
 {
-	uint8_t type{};
-	uint32_t vers{};
-	uint64_t path{};
-};
-
-template <typename StringType>
-struct StatTemplate
-{
-	uint16_t type{};
-	uint32_t dev{};
-	Qid qid;
-	uint32_t mode{};
-	uint32_t atime{};
-	uint32_t mtime{};
-	uint64_t length{};
-	StringType name;
-	StringType uid;
-	StringType gid;
-	StringType muid;
-};
-
-typedef StatTemplate<std::string> TStat;
-typedef StatTemplate<std::string_view> RStat;
+	return ParsedRMessage();
+}
