@@ -20,40 +20,32 @@
  */
 #pragma once
 
-#include <cstdint>
-#include <string>
+#include <exception>
 
-typedef uint32_t MsgLength;
-
-typedef uint8_t MsgType;
-typedef uint16_t Tag;
-typedef uint32_t Fid;
-
-struct Qid
+class ParsingException :
+	public std::exception
 {
-	Qid(uint8_t type, uint32_t vers, uint64_t path) :
-		type(type), vers(vers), path(path) { }
-
-	uint8_t type;
-	uint32_t vers;
-	uint64_t path;
+public:
+	const char* what() const noexcept override {
+		return "Parsing Exception";
+	}
 };
 
-template <typename StringType>
-struct StatTemplate
+class BufferOverrun :
+	public ParsingException
 {
-	uint16_t type{};
-	uint32_t dev{};
-	Qid qid{ 0,0,0 };
-	uint32_t mode{};
-	uint32_t atime{};
-	uint32_t mtime{};
-	uint64_t length{};
-	StringType name;
-	StringType uid;
-	StringType gid;
-	StringType muid;
+public:
+	const char* what() const noexcept override {
+		return "Buffer Overrun";
+	}
 };
 
-typedef StatTemplate<std::string> TStat;
-typedef StatTemplate<std::string_view> RStat;
+class UnknownMessageTag :
+	public ParsingException
+{
+public:
+	const char* what() const noexcept override {
+		return "Unknown Message Tag";
+	}
+};
+

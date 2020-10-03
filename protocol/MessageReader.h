@@ -20,6 +20,7 @@
  */
 #pragma once
 
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -27,89 +28,107 @@
 
 struct ParsedRVersion
 {
-	Tag tag{};
-	uint32_t msize{};
+	ParsedRVersion(uint32_t msize, std::string_view version) :
+		msize(msize), version(version) { }
+
+	uint32_t msize;
 	std::string_view version;
 };
 
 struct ParsedRAuth
 {
-	Tag tag;
+	ParsedRAuth(Qid aqid) :
+		aqid(aqid) { }
+
 	Qid aqid;
 };
 
 struct ParsedRError
 {
-	Tag tag;
+	ParsedRError(std::string_view ename) :
+		ename(ename) { }
+
 	std::string_view ename;
 };
 
 struct ParsedRFlush
-{
-	Tag tag;
-};
+{ };
 
 struct ParsedRAttach
 {
-	Tag tag;
+	ParsedRAttach(Qid qid) :
+		qid(qid) { }
+
 	Qid qid;
 };
 
 struct ParsedRWalk
 {
-	Tag tag;
+	ParsedRWalk(std::vector<Qid> wqids) :
+		wqids(wqids) { }
+
 	std::vector<Qid> wqids;
 };
 
 struct ParsedROpen
 {
-	Tag tag;
+	ParsedROpen(Qid qid, uint32_t iounit) :
+		qid(qid), iounit(iounit) { }
+
 	Qid qid;
 	uint32_t iounit;
 };
 
 struct ParsedRCreate
 {
-	Tag tag;
+	ParsedRCreate(Qid qid, uint32_t iounit) :
+		qid(qid), iounit(iounit) { }
+
 	Qid qid;
 	uint32_t iounit;
 };
 
 struct ParsedRRead
 {
-	Tag tag;
+	ParsedRRead(std::string_view data) :
+		data(data) { }
+
 	std::string_view data;
 };
 
 struct ParsedRWrite
 {
-	Tag tag;
+	ParsedRWrite(uint32_t count) :
+		count(count) { }
+
 	uint32_t count;
 };
 
 struct ParsedRClunk
-{
-	Tag tag;
-};
+{ };
 
 struct ParsedRRemove
-{
-	Tag tag;
-};
+{ };
 
 struct ParsedRStat
 {
-	Tag tag;
 	RStat stat;
 };
 
 struct ParsedRWstat
-{
-	Tag tag;
-};
+{ };
 
 
 typedef std::variant<ParsedRVersion, ParsedRAuth, ParsedRError, ParsedRFlush, ParsedRAttach, ParsedRWalk, ParsedROpen,
-	ParsedRCreate, ParsedRRead, ParsedRWrite, ParsedRClunk, ParsedRRemove, ParsedRStat, ParsedRWstat> ParsedRMessage;
+	ParsedRCreate, ParsedRRead, ParsedRWrite, ParsedRClunk, ParsedRRemove, ParsedRStat, ParsedRWstat> ParsedRMessagePayload;
 
-ParsedRMessage parseMessage(const std::string_view& msg);
+struct ParsedRMessage
+{
+	ParsedRMessage(Tag tag, ParsedRMessagePayload payload) :
+		tag(tag), payload(payload) { }
+
+	Tag tag;
+	ParsedRMessagePayload payload;
+};
+
+ParsedRMessage parseMessage(std::string_view msg);

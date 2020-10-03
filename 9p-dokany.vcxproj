@@ -107,6 +107,7 @@
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
     <ClInclude Include="protocol\DataTypes.h" />
+    <ClInclude Include="protocol\Exceptions.h" />
     <ClInclude Include="protocol\MessageReader.h" />
     <ClInclude Include="protocol\MessageTypes.h" />
     <ClInclude Include="protocol\TxMessage.h" />

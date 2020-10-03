@@ -20,7 +20,190 @@
  */
 #include "MessageReader.h"
 
-ParsedRMessage parseMessage(const std::string_view& msg)
+#include "DataTypes.h"
+#include "Exceptions.h"
+#include "MessageTypes.h"
+
+namespace
 {
-	return ParsedRMessage();
+
+static void checkForBufferOverrun(const std::string_view &buf, size_t bytes)
+{
+    if (buf.size() < bytes)
+    {
+        throw BufferOverrun();
+    }
+}
+
+template <typename T> inline T parseInteger(std::string_view &buffer)
+{
+    static_assert(std::is_integral_v<T>, "Function parses only integers");
+
+    checkForBufferOverrun(buffer, sizeof(T));
+
+    T value = 0;
+    for (int i = 0; i < sizeof(T); i++)
+    {
+        char byte = buffer[i];
+        value = (value << 8) | byte;
+    }
+
+    buffer.remove_prefix(sizeof(T));
+
+    return value;
+}
+
+std::string_view extractData(size_t count, std::string_view &buffer)
+{
+    std::string_view extracted_data(buffer.data(), count);
+    buffer.remove_prefix(count);
+
+    return extracted_data;
+}
+
+std::string_view parseString(std::string_view &buffer)
+{
+    uint16_t string_size = parseInteger<uint16_t>(buffer);
+
+    checkForBufferOverrun(buffer, string_size);
+    return extractData(string_size, buffer);
+}
+
+Qid parseQid(std::string_view &buffer)
+{
+    uint8_t type = parseInteger<uint8_t>(buffer);
+    uint32_t vers = parseInteger<uint32_t>(buffer);
+    uint64_t path = parseInteger<uint64_t>(buffer);
+
+    return Qid(type, vers, path);
+}
+
+ParsedRVersion parseRVersion(std::string_view &buffer)
+{
+    uint32_t msize = parseInteger<uint32_t>(buffer);
+    std::string_view version = parseString(buffer);
+
+    return ParsedRVersion(msize, version);
+}
+
+ParsedRAuth parseRAuth(std::string_view &buffer)
+{
+    Qid aqid = parseQid(buffer);
+
+    return ParsedRAuth(aqid);
+}
+
+ParsedRAttach parseRAttach(std::string_view &buffer)
+{
+    Qid qid = parseQid(buffer);
+
+    return ParsedRAttach(qid);
+}
+
+ParsedRError parseRError(std::string_view &buffer)
+{
+    std::string_view ename = parseString(buffer);
+
+    return ParsedRError(ename);
+}
+
+std::vector<Qid> parseQids(uint16_t nwqid, std::string_view &buffer)
+{
+    std::vector<Qid> wqids;
+
+    for (int i = 0; i < nwqid; i++)
+    {
+        wqids.emplace_back(parseQid(buffer));
+    }
+
+    return wqids;
+}
+
+ParsedRWalk parseRWalk(std::string_view &buffer)
+{
+    uint16_t nwqid = parseInteger<uint16_t>(buffer);
+    std::vector<Qid> wqids = parseQids(nwqid, buffer);
+
+    return ParsedRWalk(wqids);
+}
+
+ParsedROpen parseROpen(std::string_view &buffer)
+{
+    Qid qid = parseQid(buffer);
+    uint32_t iounit = parseInteger<uint32_t>(buffer);
+
+    return ParsedROpen(qid, iounit);
+}
+
+ParsedRCreate parseRCreate(std::string_view &buffer)
+{
+    Qid qid = parseQid(buffer);
+    uint32_t iounit = parseInteger<uint32_t>(buffer);
+
+    return ParsedRCreate(qid, iounit);
+}
+
+ParsedRRead parseRRead(std::string_view &buffer)
+{
+    uint32_t count = parseInteger<uint32_t>(buffer);
+    std::string_view data = extractData(count, buffer);
+
+    return ParsedRRead(data);
+}
+
+ParsedRWrite parseRWrite(std::string_view &buffer)
+{
+    uint32_t count = parseInteger<uint32_t>(buffer);
+
+    return ParsedRWrite(count);
+}
+
+} // namespace
+
+ParsedRMessagePayload parseMessagePayload(MsgType type, std::string_view buffer)
+{
+    switch (type)
+    {
+    case msg_type::RVersion:
+        return parseRVersion(buffer);
+    case msg_type::RAuth:
+        return parseRAuth(buffer);
+    case msg_type::RError:
+        return parseRError(buffer);
+    case msg_type::RFlush:
+        return ParsedRFlush();
+    case msg_type::RAttach:
+        return parseRAttach(buffer);
+    case msg_type::RWalk:
+        return parseRWalk(buffer);
+    case msg_type::ROpen:
+        return parseROpen(buffer);
+    case msg_type::RCreate:
+        return parseRCreate(buffer);
+    case msg_type::RRead:
+        return parseRRead(buffer);
+    case msg_type::RWrite:
+        return parseRWrite(buffer);
+    case msg_type::RClunk:
+        return ParsedRClunk();
+    case msg_type::RRemove:
+        return ParsedRRemove();
+    case msg_type::RStat:
+        // XXX: Implement parsing for these messages
+        return ParsedRStat();
+    case msg_type::RWStat:
+        return ParsedRWstat();
+    default:
+        throw UnknownMessageTag();
+    }
+}
+
+ParsedRMessage parseMessage(std::string_view buffer)
+{
+    MsgLength msg_length = parseInteger<MsgLength>(buffer);
+    MsgType type = parseInteger<MsgType>(buffer);
+    Tag tag = parseInteger<Tag>(buffer);
+    ParsedRMessagePayload payload = parseMessagePayload(type, buffer);
+
+    return ParsedRMessage(tag, payload);
 }
