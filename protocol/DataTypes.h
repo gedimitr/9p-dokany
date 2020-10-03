@@ -42,13 +42,13 @@ struct Qid
 template <typename StringType>
 struct StatTemplate
 {
-    uint16_t type{};
-    uint32_t dev{};
+    uint16_t type = 0;
+    uint32_t dev = 0;
     Qid qid{0, 0, 0};
-    uint32_t mode{};
-    uint32_t atime{};
-    uint32_t mtime{};
-    uint64_t length{};
+    uint32_t mode = 0;
+    uint32_t atime = 0;
+    uint32_t mtime = 0;
+    uint64_t length = 0;
     StringType name;
     StringType uid;
     StringType gid;

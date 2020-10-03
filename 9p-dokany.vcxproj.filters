@@ -9,7 +9,9 @@
     <ClCompile Include="protocol\TxMessageBuilder.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
-    <ClCompile Include="protocol\MessageReader.cpp" />
+    <ClCompile Include="protocol\MessageReader.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />

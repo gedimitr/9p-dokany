@@ -24,13 +24,11 @@
 #include "Exceptions.h"
 #include "MessageTypes.h"
 
-namespace
-{
+namespace {
 
 static void checkForBufferOverrun(const std::string_view &buf, size_t bytes)
 {
-    if (buf.size() < bytes)
-    {
+    if (buf.size() < bytes) {
         throw BufferOverrun();
     }
 }
@@ -43,8 +41,7 @@ inline T parseInteger(std::string_view &buffer)
     checkForBufferOverrun(buffer, sizeof(T));
 
     T value = 0;
-    for (int i = 0; i < sizeof(T); i++)
-    {
+    for (int i = 0; i < sizeof(T); i++) {
         char byte = buffer[i];
         value = (value << 8) | byte;
     }
@@ -112,8 +109,7 @@ std::vector<Qid> parseQids(uint16_t nwqid, std::string_view &buffer)
 {
     std::vector<Qid> wqids;
 
-    for (int i = 0; i < nwqid; i++)
-    {
+    for (int i = 0; i < nwqid; i++) {
         wqids.emplace_back(parseQid(buffer));
     }
 
@@ -159,12 +155,31 @@ ParsedRWrite parseRWrite(std::string_view &buffer)
     return ParsedRWrite(count);
 }
 
+ParsedRStat parseRStat(std::string_view &buffer)
+{
+    RStat stat;
+
+    uint16_t size = parseInteger<uint16_t>(buffer);
+    stat.type = parseInteger<uint16_t>(buffer);
+    stat.dev = parseInteger<uint32_t>(buffer);
+    stat.qid = parseQid(buffer);
+    stat.mode = parseInteger<uint32_t>(buffer);
+    stat.atime = parseInteger<uint32_t>(buffer);
+    stat.mtime = parseInteger<uint32_t>(buffer);
+    stat.length = parseInteger<uint64_t>(buffer);
+    stat.name = parseString(buffer);
+    stat.uid = parseString(buffer);
+    stat.gid = parseString(buffer);
+    stat.muid = parseString(buffer);
+
+    return ParsedRStat(stat);
+}
+
 } // namespace
 
 ParsedRMessagePayload parseMessagePayload(MsgType type, std::string_view buffer)
 {
-    switch (type)
-    {
+    switch (type) {
     case msg_type::RVersion:
         return parseRVersion(buffer);
     case msg_type::RAuth:
@@ -190,8 +205,7 @@ ParsedRMessagePayload parseMessagePayload(MsgType type, std::string_view buffer)
     case msg_type::RRemove:
         return ParsedRRemove();
     case msg_type::RStat:
-        // XXX: Implement parsing for these messages
-        return ParsedRStat();
+        return parseRStat(buffer);
     case msg_type::RWStat:
         return ParsedRWstat();
     default:

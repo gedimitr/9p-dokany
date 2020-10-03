@@ -112,6 +112,9 @@ struct ParsedRRemove
 
 struct ParsedRStat
 {
+    ParsedRStat(RStat stat) : stat(stat)
+    {}
+
     RStat stat;
 };
 
