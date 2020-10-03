@@ -13,9 +13,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with 9p-dokany. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Copyright (C) 2020 Gerasimos Dimitriadis
- * 
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #pragma once
@@ -27,31 +27,31 @@
 class TxMessage
 {
 public:
-	TxMessage(int capacity);
-	~TxMessage();
+    TxMessage(int capacity);
+    ~TxMessage();
 
-	TxMessage(const TxMessage&) = delete;
-	TxMessage& operator=(const TxMessage&) = delete;
+    TxMessage(const TxMessage &) = delete;
+    TxMessage &operator=(const TxMessage &) = delete;
 
-	void initialize(MsgType msg_tag);
+    void initialize(MsgType msg_tag);
 
-	void writeOctet(uint8_t value);
+    void writeOctet(uint8_t value);
 
-	template <typename T>
-	void writeInteger(T value);
-	
-	void writeRawData(const std::string_view &data);
-	void writeString(const std::string_view& str);
+    template <typename T>
+    void writeInteger(T value);
 
-	bool hasRoomFor(size_t num_bytes) const;
+    void writeRawData(const std::string_view &data);
+    void writeString(const std::string_view &str);
+
+    bool hasRoomFor(size_t num_bytes) const;
 
     std::string_view getData() const;
 
 private:
-	void resetCursor();
+    void resetCursor();
 
-	char* m_buffer;
-	char* m_buffer_end;
+    char *m_buffer;
+    char *m_buffer_end;
 
-	char* m_cursor;
+    char *m_cursor;
 };

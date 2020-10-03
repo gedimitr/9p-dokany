@@ -28,107 +28,107 @@
 
 struct ParsedRVersion
 {
-	ParsedRVersion(uint32_t msize, std::string_view version) :
-		msize(msize), version(version) { }
+    ParsedRVersion(uint32_t msize, std::string_view version) : msize(msize), version(version)
+    {}
 
-	uint32_t msize;
-	std::string_view version;
+    uint32_t msize;
+    std::string_view version;
 };
 
 struct ParsedRAuth
 {
-	ParsedRAuth(Qid aqid) :
-		aqid(aqid) { }
+    ParsedRAuth(Qid aqid) : aqid(aqid)
+    {}
 
-	Qid aqid;
+    Qid aqid;
 };
 
 struct ParsedRError
 {
-	ParsedRError(std::string_view ename) :
-		ename(ename) { }
+    ParsedRError(std::string_view ename) : ename(ename)
+    {}
 
-	std::string_view ename;
+    std::string_view ename;
 };
 
 struct ParsedRFlush
-{ };
+{};
 
 struct ParsedRAttach
 {
-	ParsedRAttach(Qid qid) :
-		qid(qid) { }
+    ParsedRAttach(Qid qid) : qid(qid)
+    {}
 
-	Qid qid;
+    Qid qid;
 };
 
 struct ParsedRWalk
 {
-	ParsedRWalk(std::vector<Qid> wqids) :
-		wqids(wqids) { }
+    ParsedRWalk(std::vector<Qid> wqids) : wqids(wqids)
+    {}
 
-	std::vector<Qid> wqids;
+    std::vector<Qid> wqids;
 };
 
 struct ParsedROpen
 {
-	ParsedROpen(Qid qid, uint32_t iounit) :
-		qid(qid), iounit(iounit) { }
+    ParsedROpen(Qid qid, uint32_t iounit) : qid(qid), iounit(iounit)
+    {}
 
-	Qid qid;
-	uint32_t iounit;
+    Qid qid;
+    uint32_t iounit;
 };
 
 struct ParsedRCreate
 {
-	ParsedRCreate(Qid qid, uint32_t iounit) :
-		qid(qid), iounit(iounit) { }
+    ParsedRCreate(Qid qid, uint32_t iounit) : qid(qid), iounit(iounit)
+    {}
 
-	Qid qid;
-	uint32_t iounit;
+    Qid qid;
+    uint32_t iounit;
 };
 
 struct ParsedRRead
 {
-	ParsedRRead(std::string_view data) :
-		data(data) { }
+    ParsedRRead(std::string_view data) : data(data)
+    {}
 
-	std::string_view data;
+    std::string_view data;
 };
 
 struct ParsedRWrite
 {
-	ParsedRWrite(uint32_t count) :
-		count(count) { }
+    ParsedRWrite(uint32_t count) : count(count)
+    {}
 
-	uint32_t count;
+    uint32_t count;
 };
 
 struct ParsedRClunk
-{ };
+{};
 
 struct ParsedRRemove
-{ };
+{};
 
 struct ParsedRStat
 {
-	RStat stat;
+    RStat stat;
 };
 
 struct ParsedRWstat
-{ };
-
+{};
 
 typedef std::variant<ParsedRVersion, ParsedRAuth, ParsedRError, ParsedRFlush, ParsedRAttach, ParsedRWalk, ParsedROpen,
-	ParsedRCreate, ParsedRRead, ParsedRWrite, ParsedRClunk, ParsedRRemove, ParsedRStat, ParsedRWstat> ParsedRMessagePayload;
+                     ParsedRCreate, ParsedRRead, ParsedRWrite, ParsedRClunk, ParsedRRemove, ParsedRStat, ParsedRWstat>
+    ParsedRMessagePayload;
 
 struct ParsedRMessage
 {
-	ParsedRMessage(Tag tag, ParsedRMessagePayload payload) :
-		tag(tag), payload(payload) { }
+    ParsedRMessage(Tag tag, ParsedRMessagePayload payload) : tag(tag), payload(payload)
+    {}
 
-	Tag tag;
-	ParsedRMessagePayload payload;
+    Tag tag;
+    ParsedRMessagePayload payload;
 };
 
 ParsedRMessage parseMessage(std::string_view msg);

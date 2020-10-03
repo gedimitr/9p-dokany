@@ -31,28 +31,28 @@ typedef uint32_t Fid;
 
 struct Qid
 {
-	Qid(uint8_t type, uint32_t vers, uint64_t path) :
-		type(type), vers(vers), path(path) { }
+    Qid(uint8_t type, uint32_t vers, uint64_t path) : type(type), vers(vers), path(path)
+    {}
 
-	uint8_t type;
-	uint32_t vers;
-	uint64_t path;
+    uint8_t type;
+    uint32_t vers;
+    uint64_t path;
 };
 
 template <typename StringType>
 struct StatTemplate
 {
-	uint16_t type{};
-	uint32_t dev{};
-	Qid qid{ 0,0,0 };
-	uint32_t mode{};
-	uint32_t atime{};
-	uint32_t mtime{};
-	uint64_t length{};
-	StringType name;
-	StringType uid;
-	StringType gid;
-	StringType muid;
+    uint16_t type{};
+    uint32_t dev{};
+    Qid qid{0, 0, 0};
+    uint32_t mode{};
+    uint32_t atime{};
+    uint32_t mtime{};
+    uint64_t length{};
+    StringType name;
+    StringType uid;
+    StringType gid;
+    StringType muid;
 };
 
 typedef StatTemplate<std::string> TStat;

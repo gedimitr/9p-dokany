@@ -52,4 +52,4 @@ constexpr MsgType RStat = 125;
 constexpr MsgType TWStat = 126;
 constexpr MsgType RWStat = 127;
 
-}
+} // namespace msg_type

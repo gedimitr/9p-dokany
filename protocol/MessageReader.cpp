@@ -35,7 +35,8 @@ static void checkForBufferOverrun(const std::string_view &buf, size_t bytes)
     }
 }
 
-template <typename T> inline T parseInteger(std::string_view &buffer)
+template <typename T>
+inline T parseInteger(std::string_view &buffer)
 {
     static_assert(std::is_integral_v<T>, "Function parses only integers");
 

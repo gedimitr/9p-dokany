@@ -22,30 +22,29 @@
 
 #include <exception>
 
-class ParsingException :
-	public std::exception
+class ParsingException : public std::exception
 {
 public:
-	const char* what() const noexcept override {
-		return "Parsing Exception";
-	}
+    const char *what() const noexcept override
+    {
+        return "Parsing Exception";
+    }
 };
 
-class BufferOverrun :
-	public ParsingException
+class BufferOverrun : public ParsingException
 {
 public:
-	const char* what() const noexcept override {
-		return "Buffer Overrun";
-	}
+    const char *what() const noexcept override
+    {
+        return "Buffer Overrun";
+    }
 };
 
-class UnknownMessageTag :
-	public ParsingException
+class UnknownMessageTag : public ParsingException
 {
 public:
-	const char* what() const noexcept override {
-		return "Unknown Message Tag";
-	}
+    const char *what() const noexcept override
+    {
+        return "Unknown Message Tag";
+    }
 };
-

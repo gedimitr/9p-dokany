@@ -1,6 +1,18 @@
 ﻿---
 BasedOnStyle: Microsoft
 Language: Cpp
+AccessModifierOffset: -4
+AlwaysBreakTemplateDeclarations: 'Yes'
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+ColumnLimit: 119
 NamespaceIndentation: None
-
+SpaceAfterTemplateKeyword: 'true'
 ...

@@ -27,100 +27,98 @@
 
 namespace {
 
-template<typename T>
+template <typename T>
 inline char extractLowEndianByte(T value, int pos)
 {
     static_assert(std::is_integral_v<T>, "Integer type required as first argument");
-	assert(pos < sizeof(T));
+    assert(pos < sizeof(T));
 
-	// When signed integers are right shifted, behaviour is implementation dependent. However, since we are not going
-	// to use any of the bits that will be shifted in, it doesn't matter if arithmetic / logical shifting is done.
+    // When signed integers are right shifted, behaviour is implementation dependent. However, since we are not going
+    // to use any of the bits that will be shifted in, it doesn't matter if arithmetic / logical shifting is done.
 
-	int shift_bits = 8 * pos;
-	return (value >> shift_bits) & 0xff;
+    int shift_bits = 8 * pos;
+    return (value >> shift_bits) & 0xff;
 }
 
-template<typename T>
-inline void writeLowEndianInteger(T value, char* buffer)
+template <typename T>
+inline void writeLowEndianInteger(T value, char *buffer)
 {
-	static_assert(std::is_integral_v<T>, "Integer type required as first argument");
+    static_assert(std::is_integral_v<T>, "Integer type required as first argument");
 
-	for (int i = 0; i < sizeof(T); i++) {
-		char byte = extractLowEndianByte(value, i);
-		*buffer++ = byte;
-	}
+    for (int i = 0; i < sizeof(T); i++) {
+        char byte = extractLowEndianByte(value, i);
+        *buffer++ = byte;
+    }
 }
 
 } // anonymous namespace
 
-TxMessage::TxMessage(int capacity) :
-	m_buffer(new char[capacity]),
-	m_buffer_end(m_buffer + capacity)
+TxMessage::TxMessage(int capacity) : m_buffer(new char[capacity]), m_buffer_end(m_buffer + capacity)
 {
-  resetCursor();
+    resetCursor();
 }
 
 TxMessage::~TxMessage()
 {
-	delete[] m_buffer;
+    delete[] m_buffer;
 }
 
 void TxMessage::initialize(MsgType type)
 {
-	resetCursor();
-	writeInteger(type);
+    resetCursor();
+    writeInteger(type);
 }
 
 void TxMessage::writeOctet(uint8_t value)
 {
-	*m_cursor++ = value;
+    *m_cursor++ = value;
 }
 
-template<typename T>
+template <typename T>
 void TxMessage::writeInteger(T value)
 {
-	static_assert(std::is_integral_v<T>, "Integer type required as argument");
+    static_assert(std::is_integral_v<T>, "Integer type required as argument");
 
-	writeLowEndianInteger(value, m_cursor);
-	m_cursor += sizeof(T);
+    writeLowEndianInteger(value, m_cursor);
+    m_cursor += sizeof(T);
 }
 
 void TxMessage::writeRawData(const std::string_view &data)
 {
-	size_t data_len = data.length();
+    size_t data_len = data.length();
 
-	memcpy(m_cursor, data.data(), data_len);
-	m_cursor += data_len;
+    memcpy(m_cursor, data.data(), data_len);
+    m_cursor += data_len;
 }
 
-void TxMessage::writeString(const std::string_view& str)
+void TxMessage::writeString(const std::string_view &str)
 {
-	size_t str_size = str.size();
-	if (!hasRoomFor(str_size) || str_size > std::numeric_limits<uint16_t>::max()) {
-		return;
-	}
+    size_t str_size = str.size();
+    if (!hasRoomFor(str_size) || str_size > std::numeric_limits<uint16_t>::max()) {
+        return;
+    }
 
-	uint16_t str_len = static_cast<uint16_t>(str_size);
-	writeInteger(str_len);
-	writeRawData(str);
+    uint16_t str_len = static_cast<uint16_t>(str_size);
+    writeInteger(str_len);
+    writeRawData(str);
 }
 
 bool TxMessage::hasRoomFor(size_t num_bytes) const
 {
-	return m_buffer + num_bytes <= m_buffer_end;
+    return m_buffer + num_bytes <= m_buffer_end;
 }
 
 std::string_view TxMessage::getData() const
 {
-	MsgLength size = static_cast<MsgLength>(m_cursor - m_buffer);
-	writeLowEndianInteger<MsgLength>(size, m_buffer);
+    MsgLength size = static_cast<MsgLength>(m_cursor - m_buffer);
+    writeLowEndianInteger<MsgLength>(size, m_buffer);
 
-	return std::string_view(m_buffer, size);
+    return std::string_view(m_buffer, size);
 }
 
 void TxMessage::resetCursor()
 {
-	m_cursor = m_buffer + sizeof(MsgLength);
+    m_cursor = m_buffer + sizeof(MsgLength);
 }
 
 // Explicit template instantiation of writeInteger method for different integer types
