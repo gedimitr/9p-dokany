@@ -51,7 +51,7 @@ inline T parseInteger(std::string_view &buffer)
     return value;
 }
 
-std::string_view extractData(size_t count, std::string_view &buffer)
+std::string_view extractDataView(size_t count, std::string_view &buffer)
 {
     std::string_view extracted_data(buffer.data(), count);
     buffer.remove_prefix(count);
@@ -64,7 +64,7 @@ std::string_view parseString(std::string_view &buffer)
     uint16_t string_size = parseInteger<uint16_t>(buffer);
 
     checkForBufferOverrun(buffer, string_size);
-    return extractData(string_size, buffer);
+    return extractDataView(string_size, buffer);
 }
 
 Qid parseQid(std::string_view &buffer)
@@ -143,7 +143,7 @@ ParsedRCreate parseRCreate(std::string_view &buffer)
 ParsedRRead parseRRead(std::string_view &buffer)
 {
     uint32_t count = parseInteger<uint32_t>(buffer);
-    std::string_view data = extractData(count, buffer);
+    std::string_view data = extractDataView(count, buffer);
 
     return ParsedRRead(data);
 }
@@ -160,17 +160,19 @@ ParsedRStat parseRStat(std::string_view &buffer)
     RStat stat;
 
     uint16_t size = parseInteger<uint16_t>(buffer);
-    stat.type = parseInteger<uint16_t>(buffer);
-    stat.dev = parseInteger<uint32_t>(buffer);
-    stat.qid = parseQid(buffer);
-    stat.mode = parseInteger<uint32_t>(buffer);
-    stat.atime = parseInteger<uint32_t>(buffer);
-    stat.mtime = parseInteger<uint32_t>(buffer);
-    stat.length = parseInteger<uint64_t>(buffer);
-    stat.name = parseString(buffer);
-    stat.uid = parseString(buffer);
-    stat.gid = parseString(buffer);
-    stat.muid = parseString(buffer);
+    std::string_view stat_buffer = extractDataView(size, buffer);
+
+    stat.type = parseInteger<uint16_t>(stat_buffer);
+    stat.dev = parseInteger<uint32_t>(stat_buffer);
+    stat.qid = parseQid(stat_buffer);
+    stat.mode = parseInteger<uint32_t>(stat_buffer);
+    stat.atime = parseInteger<uint32_t>(stat_buffer);
+    stat.mtime = parseInteger<uint32_t>(stat_buffer);
+    stat.length = parseInteger<uint64_t>(stat_buffer);
+    stat.name = parseString(stat_buffer);
+    stat.uid = parseString(stat_buffer);
+    stat.gid = parseString(stat_buffer);
+    stat.muid = parseString(stat_buffer);
 
     return ParsedRStat(stat);
 }
@@ -216,9 +218,11 @@ ParsedRMessagePayload parseMessagePayload(MsgType type, std::string_view buffer)
 ParsedRMessage parseMessage(std::string_view buffer)
 {
     MsgLength msg_length = parseInteger<MsgLength>(buffer);
-    MsgType type = parseInteger<MsgType>(buffer);
-    Tag tag = parseInteger<Tag>(buffer);
-    ParsedRMessagePayload payload = parseMessagePayload(type, buffer);
+
+    std::string_view msg_data = extractDataView(msg_length, buffer);
+    MsgType type = parseInteger<MsgType>(msg_data);
+    Tag tag = parseInteger<Tag>(msg_data);
+    ParsedRMessagePayload payload = parseMessagePayload(type, msg_data);
 
     return ParsedRMessage(tag, payload);
 }
