@@ -12,6 +12,9 @@
     <ClCompile Include="protocol\MessageReader.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
+    <ClCompile Include="protocol\Client.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -31,6 +34,9 @@
       <Filter>protocol</Filter>
     </ClInclude>
     <ClInclude Include="protocol\Exceptions.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol\Client.h">
       <Filter>protocol</Filter>
     </ClInclude>
   </ItemGroup>

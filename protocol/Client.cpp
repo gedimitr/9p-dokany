@@ -18,48 +18,44 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#pragma once
+#include "Client.h"
 
-#include <exception>
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
 
-class ParsingException : public std::exception
+#pragma comment(lib, "Ws2_32.lib")
+
+#include "Exceptions.h"
+
+class Client::Impl
 {
 public:
-    const char *what() const noexcept override
-    {
-        return "Parsing Exception";
+    Impl(const std::wstring &host, const std::wstring &service);
+    ~Impl();
+
+    std::wstring m_host;
+    std::wstring m_service;
+};
+
+Client::Impl::Impl(const std::wstring &host, const std::wstring &service) : m_host(host), m_service(service)
+{
+    WSADATA wsaData;
+    int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (res != 0) {
+        throw WinsockInitializationFailed();
     }
-};
+}
 
-class BufferOverrun : public ParsingException
+Client::Impl::~Impl()
 {
-public:
-    const char *what() const noexcept override
-    {
-        return "Buffer Overrun";
-    }
-};
+    WSACleanup();
+}
 
-class UnknownMessageTag : public ParsingException
-{
-public:
-    const char *what() const noexcept override
-    {
-        return "Unknown Message Tag";
-    }
-};
+Client::Client(const std::wstring &host, const std::wstring &service) : m_i(new Impl(host, service))
+{}
 
-class ClientException : public std::exception
-{
-public:
-    const char *what() const noexcept = 0;
-};
-
-class WinsockInitializationFailed : public ClientException
-{
-public:
-    const char* what() const noexcept override
-    {
-        return "Winsock Initialization Failed";
-    }
-};
+// The empty desctructor is needed because the Impl class is incomplete for anyone that has read only the headder
+// file
+// how to delete it.
+Client::~Client()
+{}

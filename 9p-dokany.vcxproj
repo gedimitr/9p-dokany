@@ -100,12 +100,14 @@
   <ItemGroup>
     <ClCompile Include="9pfs.cpp" />
     <ClCompile Include="main.cpp" />
+	<ClCompile Include="protocol\Client.cpp" />
     <ClCompile Include="protocol\MessageReader.cpp" />
     <ClCompile Include="protocol\TxMessage.cpp" />
     <ClCompile Include="protocol\TxMessageBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
+    <ClInclude Include="protocol\Client.h" />
     <ClInclude Include="protocol\DataTypes.h" />
     <ClInclude Include="protocol\Exceptions.h" />
     <ClInclude Include="protocol\MessageReader.h" />

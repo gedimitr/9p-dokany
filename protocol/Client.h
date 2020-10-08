@@ -18,12 +18,22 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "9pfs.h"
+#pragma once
 
-#include <spdlog/spdlog.h>
-#include "protocol/Client.h"
+#include <cstdint>
+#include <memory>
+#include <string>
 
-int __cdecl wmain(ULONG argc, PWCHAR argv[]) {
-	Client client(L"127.0.0.1", L"9999");
-  return 0;
-}
+class Client
+{
+public:
+    Client(const std::wstring &host, const std::wstring &service);
+    ~Client();
+
+    Client(const Client &) = delete;
+    Client &operator=(const Client &) = delete;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> m_i;
+};
