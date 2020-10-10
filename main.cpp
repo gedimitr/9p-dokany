@@ -20,7 +20,7 @@
  */
 #include "9pfs.h"
 
-#include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
 #include "protocol/Client.h"
 
 int __cdecl wmain(ULONG argc, PWCHAR argv[]) {

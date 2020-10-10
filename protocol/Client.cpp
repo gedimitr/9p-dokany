@@ -22,7 +22,10 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
+#include <MSWSock.h>
 #include <Ws2ipdef.h>
+
+#include "spdlog/spdlog.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -40,12 +43,14 @@ WinsockInitializer::WinsockInitializer()
     WSADATA wsaData;
     int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (res) {
+        spdlog::error(L"Winsock initialization failed");
         throw WinsockInitializationFailed();
     }
 }
 
 WinsockInitializer::~WinsockInitializer()
 {
+    spdlog::trace(L"Shutting down Winsock");
     WSACleanup();
 }
 
@@ -53,20 +58,29 @@ SOCKET createSocket()
 {
     SOCKET s = socket(AF_INET6, SOCK_STREAM, 0);
     if (s == INVALID_SOCKET) {
-        int err = WSAGetLastError();
-        throw SocketCreationFailed(err);
+        spdlog::error(L"Socket could not be created. Error status: {}", WSAGetLastError());
+        throw ClientInitializationError();
     }
 
     return s;
 }
 
-void disableIPv6OnlySocketOption(SOCKET s)
+void unsetIPv6OnlySocketOption(SOCKET s)
 {
     int ipv6_only = 0;
     int res = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6_only, sizeof(ipv6_only));
     if (res == SOCKET_ERROR) {
-        int err = WSAGetLastError();
-        throw SocketSetOptionFailed(err);
+        spdlog::error(L"Disable 'IPv6 Only' socket option failed. Error status: {}", WSAGetLastError());
+        throw ClientInitializationError();
+    }
+}
+
+void updateConnectContextSocketOption(SOCKET s)
+{
+    int res = setsockopt(s, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0);
+    if (res == SOCKET_ERROR) {
+        spdlog::warn(L"Update connect context failed. Error stats: {}", WSAGetLastError());
+        throw ConnectionFailed();
     }
 }
 
@@ -91,7 +105,6 @@ public:
 Client::Impl::Impl(const std::wstring &host, const std::wstring &service)
     : m_host(host), m_service(service), m_socket(createSocket())
 {
-    disableIPv6OnlySocketOption(m_socket);
     connectToServer();
 }
 
@@ -104,6 +117,8 @@ Client::Impl::~Impl()
 
 void Client::Impl::connectToServer()
 {
+    unsetIPv6OnlySocketOption(m_socket);
+
     SOCKADDR_STORAGE local_addr = {0};
     DWORD local_addr_len = sizeof(local_addr);
 
@@ -114,9 +129,11 @@ void Client::Impl::connectToServer()
                                  &remote_addr_len, (SOCKADDR *)&remote_addr, NULL, NULL);
 
     if (!res) {
-        int err = WSAGetLastError();
-        throw SocketConnectionFailed(err);
+        spdlog::warn(L"Connection could not be established. Error status: {}", WSAGetLastError());
+        throw ConnectionFailed();
     }
+
+    updateConnectContextSocketOption(m_socket);
 }
 
 Client::Client(const std::wstring &host, const std::wstring &service) : m_i(new Impl(host, service))
