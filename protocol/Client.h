@@ -24,6 +24,8 @@
 #include <memory>
 #include <string>
 
+#include "Exceptions.h"
+
 class Client
 {
 public:

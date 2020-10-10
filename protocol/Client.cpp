@@ -25,37 +25,50 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#include "Exceptions.h"
+namespace {
+
+class WinsockInitializer
+{
+public:
+    WinsockInitializer();
+    ~WinsockInitializer();
+};
+
+WinsockInitializer::WinsockInitializer()
+{
+    WSADATA wsaData;
+    int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (res) {
+        throw WinsockInitializationFailed();
+    }
+}
+
+WinsockInitializer::~WinsockInitializer()
+{
+    WSACleanup();
+}
+
+} // namespace
 
 class Client::Impl
 {
 public:
     Impl(const std::wstring &host, const std::wstring &service);
-    ~Impl();
 
     std::wstring m_host;
     std::wstring m_service;
+
+    WinsockInitializer m_winsock_initializer;
 };
 
 Client::Impl::Impl(const std::wstring &host, const std::wstring &service) : m_host(host), m_service(service)
-{
-    WSADATA wsaData;
-    int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (res != 0) {
-        throw WinsockInitializationFailed();
-    }
-}
-
-Client::Impl::~Impl()
-{
-    WSACleanup();
-}
+{}
 
 Client::Client(const std::wstring &host, const std::wstring &service) : m_i(new Impl(host, service))
 {}
 
-// The empty desctructor is needed because the Impl class is incomplete for anyone that has read only the headder
-// file
-// how to delete it.
+// The empty desctructor is needed because the header file does not provide enough information for one to delete the
+// Impl object. We need to define the destructor in the source file, even though there is nothing specific to be
+// recorded in it.
 Client::~Client()
 {}
