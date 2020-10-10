@@ -22,6 +22,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
+#include <Ws2ipdef.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -48,21 +49,75 @@ WinsockInitializer::~WinsockInitializer()
     WSACleanup();
 }
 
+SOCKET createSocket()
+{
+    SOCKET s = socket(AF_INET6, SOCK_STREAM, 0);
+    if (s == INVALID_SOCKET) {
+        int err = WSAGetLastError();
+        throw SocketCreationFailed(err);
+    }
+
+    return s;
+}
+
+void disableIPv6OnlySocketOption(SOCKET s)
+{
+    int ipv6_only = 0;
+    int res = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6_only, sizeof(ipv6_only));
+    if (res == SOCKET_ERROR) {
+        int err = WSAGetLastError();
+        throw SocketSetOptionFailed(err);
+    }
+}
+
 } // namespace
 
 class Client::Impl
 {
 public:
     Impl(const std::wstring &host, const std::wstring &service);
+    ~Impl();
+
+    void connectToServer();
 
     std::wstring m_host;
     std::wstring m_service;
 
+    SOCKET m_socket = INVALID_SOCKET;
+
     WinsockInitializer m_winsock_initializer;
 };
 
-Client::Impl::Impl(const std::wstring &host, const std::wstring &service) : m_host(host), m_service(service)
-{}
+Client::Impl::Impl(const std::wstring &host, const std::wstring &service)
+    : m_host(host), m_service(service), m_socket(createSocket())
+{
+    disableIPv6OnlySocketOption(m_socket);
+    connectToServer();
+}
+
+Client::Impl::~Impl()
+{
+    if (m_socket != INVALID_SOCKET) {
+        closesocket(m_socket);
+    }
+}
+
+void Client::Impl::connectToServer()
+{
+    SOCKADDR_STORAGE local_addr = {0};
+    DWORD local_addr_len = sizeof(local_addr);
+
+    SOCKADDR_STORAGE remote_addr = {0};
+    DWORD remote_addr_len = sizeof(remote_addr);
+
+    bool res = WSAConnectByNameW(m_socket, m_host.data(), m_service.data(), &local_addr_len, (SOCKADDR *)&local_addr,
+                                 &remote_addr_len, (SOCKADDR *)&remote_addr, NULL, NULL);
+
+    if (!res) {
+        int err = WSAGetLastError();
+        throw SocketConnectionFailed(err);
+    }
+}
 
 Client::Client(const std::wstring &host, const std::wstring &service) : m_i(new Impl(host, service))
 {}

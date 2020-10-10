@@ -58,8 +58,68 @@ public:
 class WinsockInitializationFailed : public ClientException
 {
 public:
-    const char* what() const noexcept override
+    const char *what() const noexcept override
     {
         return "Winsock Initialization Failed";
     }
+};
+
+class SocketSetOptionFailed : public ClientException
+{
+public:
+    SocketSetOptionFailed(int error) : m_error(error)
+    {}
+
+    const char *what() const noexcept override
+    {
+        return "Socket Set Option Failed";
+    }
+
+    int getError() const noexcept
+    {
+        return m_error;
+    }
+
+private:
+    int m_error;
+};
+
+class SocketCreationFailed : public ClientException
+{
+public:
+    SocketCreationFailed(int err) : m_error(err)
+    {}
+
+    const char *what() const noexcept override
+    {
+        return "Socket creation failed";
+    }
+
+    int getError() const noexcept
+    {
+        return m_error;
+    }
+
+private:
+    int m_error;
+};
+
+class SocketConnectionFailed : public ClientException
+{
+public:
+    SocketConnectionFailed(int error) : m_error(error)
+    {}
+
+    const char* what() const noexcept override
+    {
+        return "Socket Connection Failed";
+    }
+
+    int getError() const noexcept
+    {
+        return m_error;
+    }
+
+private:
+    int m_error;
 };
