@@ -21,13 +21,16 @@
 #include "Client.h"
 
 #define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <WinSock2.h>
-#include <MSWSock.h>
 #include <Ws2ipdef.h>
-
+#include <MSWSock.h>
+#include <winternl.h>
+#include <ip2string.h>
 #include "spdlog/spdlog.h"
 
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Ntdll.lib")
 
 namespace {
 
@@ -73,6 +76,8 @@ void unsetIPv6OnlySocketOption(SOCKET s)
         spdlog::error(L"Disable 'IPv6 Only' socket option failed. Error status: {}", WSAGetLastError());
         throw ClientInitializationError();
     }
+
+    spdlog::trace(L"Socket option 'IPv6 Only' successfully disabled");
 }
 
 void updateConnectContextSocketOption(SOCKET s)
@@ -81,6 +86,64 @@ void updateConnectContextSocketOption(SOCKET s)
     if (res == SOCKET_ERROR) {
         spdlog::warn(L"Update connect context failed. Error stats: {}", WSAGetLastError());
         throw ConnectionFailed();
+    }
+
+    spdlog::trace(L"Connect context successfully updated");
+}
+
+std::wstring printSockAddrIn(const SOCKADDR_IN &sockaddr_in)
+{
+    const IN_ADDR *in_addr = &sockaddr_in.sin_addr;
+    USHORT port = sockaddr_in.sin_port;
+
+    wchar_t buffer[INET_ADDRSTRLEN] = {0};
+    ULONG addr_str_len = 0;
+
+    NTSTATUS res = RtlIpv4AddressToStringExW(in_addr, port, buffer, &addr_str_len);
+
+    if (res == 0) {
+        return std::wstring(buffer);
+    }
+    else {
+        spdlog::warn("Conversion of IPv4 address/port to string failed");
+        return std::wstring(L"<conversion failed>");
+    }
+}
+
+std::wstring printSockAddrIn6(const SOCKADDR_IN6& sockaddr_in)
+{
+    const IN6_ADDR* in_addr = &sockaddr_in.sin6_addr;
+    ULONG scope_id = sockaddr_in.sin6_scope_id;
+    USHORT port = sockaddr_in.sin6_port;
+
+    wchar_t buffer[INET6_ADDRSTRLEN] = { 0 };
+    ULONG addr_str_len = 0;
+
+    NTSTATUS res = RtlIpv6AddressToStringExW(in_addr, scope_id, port, buffer, &addr_str_len);
+
+    if (res == 0) {
+        return std::wstring(buffer);
+    }
+    else {
+        spdlog::warn("Conversion of IPv6 address/port to string failed");
+        return std::wstring(L"<conversion failed>");
+    }
+}
+
+std::wstring printAddr(const SOCKADDR &sock_addr)
+{
+    ADDRESS_FAMILY sa_family = sock_addr.sa_family;
+    if (sa_family == AF_INET) {
+        const SOCKADDR_IN &sockaddr_in = reinterpret_cast<const SOCKADDR_IN &>(sock_addr);
+        return printSockAddrIn(sockaddr_in);
+    }
+    else if (sa_family == AF_INET6) {
+        const SOCKADDR_IN6& sockaddr_in6 = reinterpret_cast<const SOCKADDR_IN6&>(sock_addr);
+        return printSockAddrIn6(sockaddr_in6);
+    }
+    else {
+        spdlog::warn("Cannot print address, unsupported address family ({})", sa_family);
+        return L"<Unsupported address family>";
     }
 }
 
@@ -132,6 +195,8 @@ void Client::Impl::connectToServer()
         spdlog::warn(L"Connection could not be established. Error status: {}", WSAGetLastError());
         throw ConnectionFailed();
     }
+
+    spdlog::debug(L"Successfully connected to port {}", printAddr((const SOCKADDR &)remote_addr));
 
     updateConnectContextSocketOption(m_socket);
 }
