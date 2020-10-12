@@ -10,9 +10,11 @@ BraceWrapping:
   AfterFunction: true
   AfterNamespace: false
   AfterStruct: true
+  BeforeElse: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
 ColumnLimit: 119
 NamespaceIndentation: None
+SortIncludes: false
 SpaceAfterTemplateKeyword: 'true'
 ...

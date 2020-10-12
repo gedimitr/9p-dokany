@@ -27,6 +27,7 @@
 #include <MSWSock.h>
 #include <winternl.h>
 #include <ip2string.h>
+
 #include "spdlog/spdlog.h"
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -103,28 +104,26 @@ std::wstring printSockAddrIn(const SOCKADDR_IN &sockaddr_in)
 
     if (res == 0) {
         return std::wstring(buffer);
-    }
-    else {
+    } else {
         spdlog::warn("Conversion of IPv4 address/port to string failed");
         return std::wstring(L"<conversion failed>");
     }
 }
 
-std::wstring printSockAddrIn6(const SOCKADDR_IN6& sockaddr_in)
+std::wstring printSockAddrIn6(const SOCKADDR_IN6 &sockaddr_in)
 {
-    const IN6_ADDR* in_addr = &sockaddr_in.sin6_addr;
+    const IN6_ADDR *in_addr = &sockaddr_in.sin6_addr;
     ULONG scope_id = sockaddr_in.sin6_scope_id;
     USHORT port = sockaddr_in.sin6_port;
 
-    wchar_t buffer[INET6_ADDRSTRLEN] = { 0 };
+    wchar_t buffer[INET6_ADDRSTRLEN] = {0};
     ULONG addr_str_len = 0;
 
     NTSTATUS res = RtlIpv6AddressToStringExW(in_addr, scope_id, port, buffer, &addr_str_len);
 
     if (res == 0) {
         return std::wstring(buffer);
-    }
-    else {
+    } else {
         spdlog::warn("Conversion of IPv6 address/port to string failed");
         return std::wstring(L"<conversion failed>");
     }
@@ -136,12 +135,10 @@ std::wstring printAddr(const SOCKADDR &sock_addr)
     if (sa_family == AF_INET) {
         const SOCKADDR_IN &sockaddr_in = reinterpret_cast<const SOCKADDR_IN &>(sock_addr);
         return printSockAddrIn(sockaddr_in);
-    }
-    else if (sa_family == AF_INET6) {
-        const SOCKADDR_IN6& sockaddr_in6 = reinterpret_cast<const SOCKADDR_IN6&>(sock_addr);
+    } else if (sa_family == AF_INET6) {
+        const SOCKADDR_IN6 &sockaddr_in6 = reinterpret_cast<const SOCKADDR_IN6 &>(sock_addr);
         return printSockAddrIn6(sockaddr_in6);
-    }
-    else {
+    } else {
         spdlog::warn("Cannot print address, unsupported address family ({})", sa_family);
         return L"<Unsupported address family>";
     }
