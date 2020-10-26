@@ -28,12 +28,20 @@
 #include <winternl.h>
 #include <ip2string.h>
 
+#include "TxMessage.h"
+#include "TxMessageBuilder.h"
+#include "MessageReader.h"
+
+#include "utils/TextConversion.h"
 #include "spdlog/spdlog.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Ntdll.lib")
 
 namespace {
+
+constexpr int MAX_MSG_SIZE = 16 * 1024;
+constexpr std::string_view PROTOCOL_VERSION = "9P2000";
 
 class WinsockInitializer
 {
@@ -129,8 +137,9 @@ std::wstring printSockAddrIn6(const SOCKADDR_IN6 &sockaddr_in)
     }
 }
 
-std::wstring printAddr(const SOCKADDR &sock_addr)
+std::wstring printAddr(const SOCKADDR_STORAGE &sock_addr_storage)
 {
+    const SOCKADDR &sock_addr = reinterpret_cast<const SOCKADDR &>(sock_addr_storage);
     ADDRESS_FAMILY sa_family = sock_addr.sa_family;
     if (sa_family == AF_INET) {
         const SOCKADDR_IN &sockaddr_in = reinterpret_cast<const SOCKADDR_IN &>(sock_addr);
@@ -144,6 +153,28 @@ std::wstring printAddr(const SOCKADDR &sock_addr)
     }
 }
 
+void validateRecvResult(int res)
+{
+    if (res == 0) {
+        spdlog::error("Server closed connection");
+        throw ConnectionClosed();
+    } else {
+        spdlog::error(L"Reading from socket failed. Error status: {}", WSAGetLastError());
+        throw RecvFailed();
+    }
+}
+
+MsgLength peekForMessageLength(SOCKET socket)
+{
+    char read_buf[4];
+
+    int res = recv(socket, read_buf, 4, MSG_PEEK);
+    validateRecvResult(res);
+
+    assert(res > 0);
+    return parseMessageLength(read_buf);
+} // namespace
+
 } // namespace
 
 class Client::Impl
@@ -153,19 +184,28 @@ public:
     ~Impl();
 
     void connectToServer();
+    void doVersionHandshake();
+
+    void sendMessageInTxBuffer();
+    std::string readIncomingMessage();
+    std::string readData(MsgLength message_length);
 
     std::wstring m_host;
     std::wstring m_service;
 
     SOCKET m_socket = INVALID_SOCKET;
+    TxMessage m_tx_message;
+    TxMessageBuilder m_tx_msg_builder;
 
     WinsockInitializer m_winsock_initializer;
 };
 
 Client::Impl::Impl(const std::wstring &host, const std::wstring &service)
-    : m_host(host), m_service(service), m_socket(createSocket())
+    : m_host(host), m_service(service), m_socket(createSocket()), m_tx_message(16 * 1024),
+      m_tx_msg_builder(&m_tx_message)
 {
     connectToServer();
+    doVersionHandshake();
 }
 
 Client::Impl::~Impl()
@@ -193,9 +233,61 @@ void Client::Impl::connectToServer()
         throw ConnectionFailed();
     }
 
-    spdlog::debug(L"Successfully connected to port {}", printAddr((const SOCKADDR &)remote_addr));
+    spdlog::debug(L"Successfully connected to port {}", printAddr(remote_addr));
 
     updateConnectContextSocketOption(m_socket);
+}
+
+void Client::Impl::doVersionHandshake()
+{
+    m_tx_msg_builder.buildTVersion(MAX_MSG_SIZE, PROTOCOL_VERSION);
+    sendMessageInTxBuffer();
+
+    std::string incoming_msg = readIncomingMessage();
+    std::string_view incoming_msg_view(incoming_msg.data(), incoming_msg.size());
+    ParsedRMessage response = parseMessage(incoming_msg_view);
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRVersion>(response_payload)) {
+        const ParsedRVersion &rversion = std::get<ParsedRVersion>(response_payload);
+
+        spdlog::debug(L"Received RVersion with msize: {} and version: {}", rversion.msize,
+                      convertUtf8ToWstring(rversion.version));
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TVersion sent, with ename: {}", w_ename);
+        throw VersionHandshakeError();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TVersion");
+        throw UnexpectedMessageReceived();
+    }
+}
+
+void Client::Impl::sendMessageInTxBuffer()
+{
+    std::string_view buffer = m_tx_message.getData();
+
+    int res = send(m_socket, buffer.data(), (int)buffer.size(), 0);
+    if (res == SOCKET_ERROR) {
+        spdlog::error(L"Send failed. Error status: {}", WSAGetLastError());
+        throw SendFailed();
+    }
+}
+
+std::string Client::Impl::readIncomingMessage()
+{
+    MsgLength message_length = peekForMessageLength(m_socket);
+    return readData(message_length);
+}
+
+std::string Client::Impl::readData(MsgLength msg_length)
+{
+    std::string incoming_buf(msg_length, '\0');
+    int res = recv(m_socket, incoming_buf.data(), msg_length, 0);
+    validateRecvResult(res);
+
+    return incoming_buf;
 }
 
 Client::Client(const std::wstring &host, const std::wstring &service) : m_i(new Impl(host, service))

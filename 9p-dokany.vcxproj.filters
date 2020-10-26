@@ -15,7 +15,7 @@
     <ClCompile Include="protocol\Client.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
-    <ClCompile Include="TextConversion.cpp" />
+    <ClCompile Include="utils\TextConversion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -40,7 +40,7 @@
     <ClInclude Include="protocol\Client.h">
       <Filter>protocol</Filter>
     </ClInclude>
-    <ClInclude Include="TextConversion.h" />
+    <ClInclude Include="utils\TextConversion.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="protocol">

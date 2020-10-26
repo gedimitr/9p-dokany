@@ -226,3 +226,9 @@ ParsedRMessage parseMessage(std::string_view buffer)
 
     return ParsedRMessage(tag, payload);
 }
+
+MsgLength parseMessageLength(const char* buf)
+{
+    std::string_view string_view(buf, sizeof(MsgLength));
+    return parseInteger<MsgLength>(string_view);
+}

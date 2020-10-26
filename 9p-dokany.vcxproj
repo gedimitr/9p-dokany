@@ -62,7 +62,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_ENABLE_ATOMIC_ALIGNMENT_FIX;SPDLOG_WCHAR_TO_UTF8_SUPPORT</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>./deps/dokany;./deps/dokany/sys;./deps/spdlog/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./deps/dokany;./deps/dokany/sys;./deps/spdlog/include;.</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -104,7 +104,7 @@
     <ClCompile Include="protocol\MessageReader.cpp" />
     <ClCompile Include="protocol\TxMessage.cpp" />
     <ClCompile Include="protocol\TxMessageBuilder.cpp" />
-    <ClCompile Include="TextConversion.cpp" />
+    <ClCompile Include="utils\TextConversion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -115,7 +115,7 @@
     <ClInclude Include="protocol\MessageTypes.h" />
     <ClInclude Include="protocol\TxMessage.h" />
     <ClInclude Include="protocol\TxMessageBuilder.h" />
-    <ClInclude Include="TextConversion.h" />
+    <ClInclude Include="utils\TextConversion.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="deps\dokany\dokan\dokan.vcxproj">

@@ -81,3 +81,48 @@ public:
         return "Connection could not be established";
     }
 };
+
+class VersionHandshakeError : public ClientException
+{
+public:
+    const char *what() const noexcept override
+    {
+        return "Version Handshake failed";
+    }
+};
+
+class ConnectionClosed : public ClientException
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Connection Closed";
+    }
+};
+
+class RecvFailed : public ClientException
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Receive Failed";
+    }
+};
+
+class SendFailed : public ClientException
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Send Failed";
+    }
+};
+
+class UnexpectedMessageReceived : public ClientException
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Unexpected Message Received";
+    }
+};

@@ -135,3 +135,5 @@ struct ParsedRMessage
 };
 
 ParsedRMessage parseMessage(std::string_view msg);
+
+MsgLength parseMessageLength(const char *buf);
