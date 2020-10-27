@@ -26,10 +26,21 @@
 
 #include "Exceptions.h"
 
+struct ClientConfiguration
+{
+    ClientConfiguration(const std::wstring &host, const std::wstring &service) : host(host), service(service)
+    {}
+
+    std::wstring host;
+    std::wstring service;
+    std::wstring uname = L"nobody";
+    std::wstring aname;
+};
+
 class Client
 {
 public:
-    Client(const std::wstring &host, const std::wstring &service);
+    Client(const ClientConfiguration &config);
     ~Client();
 
     Client(const Client &) = delete;

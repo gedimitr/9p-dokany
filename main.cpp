@@ -25,6 +25,7 @@
 
 int __cdecl wmain(ULONG argc, PWCHAR argv[])
 {
-    Client client(L"127.0.0.1", L"9999");
+    ClientConfiguration client_config(L"127.0.0.1", L"9999");
+    Client client(client_config);
     return 0;
 }

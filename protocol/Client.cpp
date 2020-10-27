@@ -180,7 +180,7 @@ MsgLength peekForMessageLength(SOCKET socket)
 class Client::Impl
 {
 public:
-    Impl(const std::wstring &host, const std::wstring &service);
+    Impl(const ClientConfiguration &config);
     ~Impl();
 
     void connectToServer();
@@ -196,13 +196,14 @@ public:
     SOCKET m_socket = INVALID_SOCKET;
     TxMessage m_tx_message;
     TxMessageBuilder m_tx_msg_builder;
+    uint32_t m_max_message_size;
 
     WinsockInitializer m_winsock_initializer;
 };
 
-Client::Impl::Impl(const std::wstring &host, const std::wstring &service)
-    : m_host(host), m_service(service), m_socket(createSocket()), m_tx_message(16 * 1024),
-      m_tx_msg_builder(&m_tx_message)
+Client::Impl::Impl(const ClientConfiguration &config)
+    : m_host(config.host), m_service(config.service), m_socket(createSocket()), m_tx_message(16 * 1024),
+      m_tx_msg_builder(&m_tx_message), m_max_message_size(MAX_MSG_SIZE)
 {
     connectToServer();
     doVersionHandshake();
@@ -253,6 +254,8 @@ void Client::Impl::doVersionHandshake()
 
         spdlog::debug(L"Received RVersion with msize: {} and version: {}", rversion.msize,
                       convertUtf8ToWstring(rversion.version));
+
+        m_max_message_size = min(m_max_message_size, rversion.msize);
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
         const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
         std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
@@ -290,7 +293,7 @@ std::string Client::Impl::readData(MsgLength msg_length)
     return incoming_buf;
 }
 
-Client::Client(const std::wstring &host, const std::wstring &service) : m_i(new Impl(host, service))
+Client::Client(const ClientConfiguration &config) : m_i(new Impl(config))
 {}
 
 // The empty desctructor is needed because the header file does not provide enough information for one to delete the
