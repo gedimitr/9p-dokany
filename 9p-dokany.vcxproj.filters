@@ -41,6 +41,9 @@
       <Filter>protocol</Filter>
     </ClInclude>
     <ClInclude Include="utils\TextConversion.h" />
+    <ClInclude Include="protocol\ConstantValues.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="protocol">

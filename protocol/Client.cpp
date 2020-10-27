@@ -28,6 +28,7 @@
 #include <winternl.h>
 #include <ip2string.h>
 
+#include "ConstantValues.h"
 #include "TxMessage.h"
 #include "TxMessageBuilder.h"
 #include "MessageReader.h"
@@ -64,6 +65,20 @@ WinsockInitializer::~WinsockInitializer()
 {
     spdlog::trace(L"Shutting down Winsock");
     WSACleanup();
+}
+
+class TagIssuer
+{
+public:
+    Tag issueTag();
+
+private:
+    Tag m_tag = 1000;
+};
+
+Tag TagIssuer::issueTag()
+{
+    return m_tag++;
 }
 
 SOCKET createSocket()
@@ -185,13 +200,15 @@ public:
 
     void connectToServer();
     void doVersionHandshake();
+    void doAuthentication();
+
+    void sendAuthMessage();
 
     void sendMessageInTxBuffer();
     std::string readIncomingMessage();
     std::string readData(MsgLength message_length);
 
-    std::wstring m_host;
-    std::wstring m_service;
+    ClientConfiguration m_config;
 
     SOCKET m_socket = INVALID_SOCKET;
     TxMessage m_tx_message;
@@ -199,14 +216,16 @@ public:
     uint32_t m_max_message_size;
 
     WinsockInitializer m_winsock_initializer;
+    TagIssuer m_tag_issuer;
 };
 
 Client::Impl::Impl(const ClientConfiguration &config)
-    : m_host(config.host), m_service(config.service), m_socket(createSocket()), m_tx_message(16 * 1024),
-      m_tx_msg_builder(&m_tx_message), m_max_message_size(MAX_MSG_SIZE)
+    : m_config(config), m_socket(createSocket()), m_tx_message(16 * 1024), m_tx_msg_builder(&m_tx_message),
+      m_max_message_size(MAX_MSG_SIZE)
 {
     connectToServer();
     doVersionHandshake();
+    doAuthentication();
 }
 
 Client::Impl::~Impl()
@@ -226,8 +245,10 @@ void Client::Impl::connectToServer()
     SOCKADDR_STORAGE remote_addr = {0};
     DWORD remote_addr_len = sizeof(remote_addr);
 
-    bool res = WSAConnectByNameW(m_socket, m_host.data(), m_service.data(), &local_addr_len, (SOCKADDR *)&local_addr,
-                                 &remote_addr_len, (SOCKADDR *)&remote_addr, NULL, NULL);
+    wchar_t *host = m_config.host.data();
+    wchar_t *service = m_config.host.data();
+    bool res = WSAConnectByNameW(m_socket, host, service, &local_addr_len, (SOCKADDR *)&local_addr, &remote_addr_len,
+                                 (SOCKADDR *)&remote_addr, NULL, NULL);
 
     if (!res) {
         spdlog::warn(L"Connection could not be established. Error status: {}", WSAGetLastError());
@@ -241,7 +262,7 @@ void Client::Impl::connectToServer()
 
 void Client::Impl::doVersionHandshake()
 {
-    m_tx_msg_builder.buildTVersion(MAX_MSG_SIZE, PROTOCOL_VERSION);
+    m_tx_msg_builder.buildTVersion(m_max_message_size, PROTOCOL_VERSION);
     sendMessageInTxBuffer();
 
     std::string incoming_msg = readIncomingMessage();
@@ -265,6 +286,38 @@ void Client::Impl::doVersionHandshake()
         spdlog::error(L"Unexpected message received while waiting for response to TVersion");
         throw UnexpectedMessageReceived();
     }
+}
+
+void Client::Impl::doAuthentication()
+{
+    sendAuthMessage();
+
+    std::string incoming_msg = readIncomingMessage();
+    std::string_view incoming_msg_view(incoming_msg.data(), incoming_msg.size());
+    ParsedRMessage response = parseMessage(incoming_msg_view);
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRError>(response_payload)) {
+        spdlog::info(L"Server doesn't support authentication");
+    } else if (std::holds_alternative<ParsedRAuth>(response_payload)) {
+        spdlog::error(L"Server sent unsupported authentication details");
+        throw ServerRequestedAuthentication();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TVersion");
+        throw UnexpectedMessageReceived();
+    }
+}
+
+void Client::Impl::sendAuthMessage()
+{
+    Tag tag = m_tag_issuer.issueTag();
+    Fid afid = constant::NOFID;
+
+    std::string uname_utf8 = convertWstringToUtf8(m_config.uname);
+    std::string aname_utf8 = convertWstringToUtf8(m_config.aname);
+
+    m_tx_msg_builder.buildTAuth(tag, afid, uname_utf8, aname_utf8);
+    sendMessageInTxBuffer();
 }
 
 void Client::Impl::sendMessageInTxBuffer()

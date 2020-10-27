@@ -126,3 +126,12 @@ public:
         return "Unexpected Message Received";
     }
 };
+
+class ServerRequestedAuthentication : public ClientException
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Server Requested Authentication";
+    }
+};

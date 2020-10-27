@@ -109,6 +109,7 @@
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
     <ClInclude Include="protocol\Client.h" />
+    <ClInclude Include="protocol\ConstantValues.h" />
     <ClInclude Include="protocol\DataTypes.h" />
     <ClInclude Include="protocol\Exceptions.h" />
     <ClInclude Include="protocol\MessageReader.h" />
