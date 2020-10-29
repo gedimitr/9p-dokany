@@ -62,7 +62,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_ENABLE_ATOMIC_ALIGNMENT_FIX;SPDLOG_WCHAR_TO_UTF8_SUPPORT</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>./deps/dokany;./deps/dokany/sys;./deps/spdlog/include;.</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./deps/dokany;./deps/dokany/sys;./deps/spdlog/include;./gsl;.</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
