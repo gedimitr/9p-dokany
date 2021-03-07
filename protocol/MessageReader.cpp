@@ -219,10 +219,9 @@ ParsedRMessage parseMessage(std::string_view buffer)
 {
     MsgLength msg_length = parseInteger<MsgLength>(buffer);
 
-    std::string_view msg_data = extractDataView(msg_length, buffer);
-    MsgType type = parseInteger<MsgType>(msg_data);
-    Tag tag = parseInteger<Tag>(msg_data);
-    ParsedRMessagePayload payload = parseMessagePayload(type, msg_data);
+    MsgType type = parseInteger<MsgType>(buffer);
+    Tag tag = parseInteger<Tag>(buffer);
+    ParsedRMessagePayload payload = parseMessagePayload(type, buffer);
 
     return ParsedRMessage(tag, payload);
 }
