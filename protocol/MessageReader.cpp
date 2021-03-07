@@ -43,7 +43,7 @@ inline T parseInteger(std::string_view &buffer)
     T value = 0;
     for (int i = 0; i < sizeof(T); i++) {
         char byte = buffer[i];
-        value = (value << 8) | byte;
+        value = value | (byte << (8 * i));
     }
 
     buffer.remove_prefix(sizeof(T));
