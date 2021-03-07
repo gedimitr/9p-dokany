@@ -67,19 +67,26 @@ WinsockInitializer::~WinsockInitializer()
     WSACleanup();
 }
 
-class TagIssuer
+template <class T>
+class IntegerIssuer
 {
 public:
-    Tag issueTag();
+    T issue();
 
 private:
-    Tag m_tag = 1000;
+    T m_value = 0;
 };
 
-Tag TagIssuer::issueTag()
+template <class T>
+T IntegerIssuer<T>::issue()
 {
-    return m_tag++;
+    static_assert(std::is_integral_v<T>, "Integer Issuer can issue only integers");
+
+    return ++m_value;
 }
+
+using TagIssuer = IntegerIssuer<Tag>;
+using FidIssuer = IntegerIssuer<Fid>;
 
 SOCKET createSocket()
 {
@@ -201,11 +208,14 @@ public:
     void connectToServer();
     void doVersionHandshake();
     void doAuthentication();
+    void doAttachment();
+    void sendAttachMessage();
 
     void sendAuthMessage();
 
     void sendMessageInTxBuffer();
     std::string readIncomingMessage();
+    ParsedRMessage readParseIncomingMessage();
     std::string readData(MsgLength message_length);
 
     ClientConfiguration m_config;
@@ -217,6 +227,7 @@ public:
     uint32_t m_max_message_size;
 
     TagIssuer m_tag_issuer;
+    FidIssuer m_fid_issuer;
 };
 
 Client::Impl::Impl(const ClientConfiguration &config)
@@ -226,6 +237,7 @@ Client::Impl::Impl(const ClientConfiguration &config)
     connectToServer();
     doVersionHandshake();
     doAuthentication();
+    doAttachment();
 }
 
 Client::Impl::~Impl()
@@ -265,9 +277,7 @@ void Client::Impl::doVersionHandshake()
     m_tx_msg_builder.buildTVersion(m_max_message_size, PROTOCOL_VERSION);
     sendMessageInTxBuffer();
 
-    std::string incoming_msg = readIncomingMessage();
-    std::string_view incoming_msg_view(incoming_msg.data(), incoming_msg.size());
-    ParsedRMessage response = parseMessage(incoming_msg_view);
+    ParsedRMessage response = readParseIncomingMessage();
 
     const ParsedRMessagePayload &response_payload = response.payload;
     if (std::holds_alternative<ParsedRVersion>(response_payload)) {
@@ -292,9 +302,7 @@ void Client::Impl::doAuthentication()
 {
     sendAuthMessage();
 
-    std::string incoming_msg = readIncomingMessage();
-    std::string_view incoming_msg_view(incoming_msg.data(), incoming_msg.size());
-    ParsedRMessage response = parseMessage(incoming_msg_view);
+    ParsedRMessage response = readParseIncomingMessage();
 
     const ParsedRMessagePayload &response_payload = response.payload;
     if (std::holds_alternative<ParsedRError>(response_payload)) {
@@ -308,15 +316,48 @@ void Client::Impl::doAuthentication()
     }
 }
 
+void Client::Impl::doAttachment()
+{
+    sendAttachMessage();
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRAttach>(response_payload)) {
+        spdlog::debug(L"Server responded to TAttach with RAttach");
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TAttach sent, with ename: {}", w_ename);
+        throw UnexpectedMessageReceived();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TAttach");
+        throw UnexpectedMessageReceived();
+    }
+}
+
 void Client::Impl::sendAuthMessage()
 {
-    Tag tag = m_tag_issuer.issueTag();
+    Tag tag = m_tag_issuer.issue();
     Fid afid = constant::NOFID;
 
     std::string uname_utf8 = convertWstringToUtf8(m_config.uname);
     std::string aname_utf8 = convertWstringToUtf8(m_config.aname);
 
     m_tx_msg_builder.buildTAuth(tag, afid, uname_utf8, aname_utf8);
+    sendMessageInTxBuffer();
+}
+
+void Client::Impl::sendAttachMessage()
+{
+    Tag tag = m_tag_issuer.issue();
+    Fid fid = m_fid_issuer.issue();
+    Fid afid = static_cast<Fid>(-1);
+
+    std::string uname_utf8 = convertWstringToUtf8(m_config.uname);
+    std::string aname_utf8 = convertWstringToUtf8(m_config.aname);
+
+    m_tx_msg_builder.buildTAttach(tag, fid, afid, uname_utf8, aname_utf8);
     sendMessageInTxBuffer();
 }
 
@@ -335,6 +376,13 @@ std::string Client::Impl::readIncomingMessage()
 {
     MsgLength message_length = peekForMessageLength(m_socket);
     return readData(message_length);
+}
+
+ParsedRMessage Client::Impl::readParseIncomingMessage()
+{
+    std::string incoming_msg = readIncomingMessage();
+    std::string_view incoming_msg_view(incoming_msg.data(), incoming_msg.size());
+    return parseMessage(incoming_msg_view);
 }
 
 std::string Client::Impl::readData(MsgLength msg_length)
