@@ -23,7 +23,7 @@
 #include "spdlog/spdlog.h"
 #include "protocol/Client.h"
 
-int __cdecl wmain(ULONG argc, PWCHAR argv[])
+int __cdecl wmain(ULONG, PWCHAR[])
 {
     ClientConfiguration client_config(L"127.0.0.1", L"9999");
     Client client(client_config);

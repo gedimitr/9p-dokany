@@ -42,7 +42,7 @@ inline T parseInteger(std::string_view &buffer)
 
     T value = 0;
     for (int i = 0; i < sizeof(T); i++) {
-        char byte = buffer[i];
+        T byte = buffer[i];
         value = value | (byte << (8 * i));
     }
 
@@ -217,7 +217,7 @@ ParsedRMessagePayload parseMessagePayload(MsgType type, std::string_view buffer)
 
 ParsedRMessage parseMessage(std::string_view buffer)
 {
-    MsgLength msg_length = parseInteger<MsgLength>(buffer);
+    parseInteger<MsgLength>(buffer);
 
     MsgType type = parseInteger<MsgType>(buffer);
     Tag tag = parseInteger<Tag>(buffer);
