@@ -173,7 +173,7 @@ void validateRecvResult(int res)
     if (res == 0) {
         spdlog::error("Server closed connection");
         throw ConnectionClosed();
-    } else {
+    } else if (res == SOCKET_ERROR) {
         spdlog::error(L"Reading from socket failed. Error status: {}", WSAGetLastError());
         throw RecvFailed();
     }
@@ -210,12 +210,12 @@ public:
 
     ClientConfiguration m_config;
 
+    WinsockInitializer m_winsock_initializer;
     SOCKET m_socket = INVALID_SOCKET;
     TxMessage m_tx_message;
     TxMessageBuilder m_tx_msg_builder;
     uint32_t m_max_message_size;
 
-    WinsockInitializer m_winsock_initializer;
     TagIssuer m_tag_issuer;
 };
 
@@ -246,7 +246,7 @@ void Client::Impl::connectToServer()
     DWORD remote_addr_len = sizeof(remote_addr);
 
     wchar_t *host = m_config.host.data();
-    wchar_t *service = m_config.host.data();
+    wchar_t *service = m_config.service.data();
     bool res = WSAConnectByNameW(m_socket, host, service, &local_addr_len, (SOCKADDR *)&local_addr, &remote_addr_len,
                                  (SOCKADDR *)&remote_addr, NULL, NULL);
 
