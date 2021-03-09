@@ -16,6 +16,9 @@
       <Filter>protocol</Filter>
     </ClCompile>
     <ClCompile Include="utils\TextConversion.cpp" />
+    <ClCompile Include="protocol\FidTracker.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -42,6 +45,9 @@
     </ClInclude>
     <ClInclude Include="utils\TextConversion.h" />
     <ClInclude Include="protocol\ConstantValues.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol\FidTracker.h">
       <Filter>protocol</Filter>
     </ClInclude>
   </ItemGroup>

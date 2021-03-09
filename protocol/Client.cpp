@@ -29,6 +29,7 @@
 #include <ip2string.h>
 
 #include "ConstantValues.h"
+#include "FidTracker.h"
 #include "TxMessage.h"
 #include "TxMessageBuilder.h"
 #include "MessageReader.h"
@@ -209,7 +210,7 @@ public:
     void doVersionHandshake();
     void doAuthentication();
     void doAttachment();
-    void sendAttachMessage();
+    void sendAttachMessage(Fid fid);
 
     void sendAuthMessage();
 
@@ -228,6 +229,8 @@ public:
 
     TagIssuer m_tag_issuer;
     FidIssuer m_fid_issuer;
+
+    FidTracker m_fid_tracker;
 };
 
 Client::Impl::Impl(const ClientConfiguration &config)
@@ -318,13 +321,17 @@ void Client::Impl::doAuthentication()
 
 void Client::Impl::doAttachment()
 {
-    sendAttachMessage();
+    Fid fid = m_fid_issuer.issue();
+
+    sendAttachMessage(fid);
 
     ParsedRMessage response = readParseIncomingMessage();
 
     const ParsedRMessagePayload &response_payload = response.payload;
     if (std::holds_alternative<ParsedRAttach>(response_payload)) {
         spdlog::debug(L"Server responded to TAttach with RAttach");
+        const ParsedRAttach &parsed_rattach = std::get<ParsedRAttach>(response_payload);
+        m_fid_tracker.setRoot(fid, parsed_rattach.qid);
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
         const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
         std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
@@ -348,10 +355,9 @@ void Client::Impl::sendAuthMessage()
     sendMessageInTxBuffer();
 }
 
-void Client::Impl::sendAttachMessage()
+void Client::Impl::sendAttachMessage(Fid fid)
 {
     Tag tag = m_tag_issuer.issue();
-    Fid fid = m_fid_issuer.issue();
     Fid afid = static_cast<Fid>(-1);
 
     std::string uname_utf8 = convertWstringToUtf8(m_config.uname);
