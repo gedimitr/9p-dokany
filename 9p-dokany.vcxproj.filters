@@ -19,6 +19,7 @@
     <ClCompile Include="protocol\FidTracker.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
+    <ClCompile Include="9pfs_operations.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -50,6 +51,7 @@
     <ClInclude Include="protocol\FidTracker.h">
       <Filter>protocol</Filter>
     </ClInclude>
+    <ClInclude Include="9pfs_operations.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="protocol">
