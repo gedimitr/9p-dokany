@@ -20,12 +20,26 @@
  */
 #include "9pfs.h"
 
+#include "Config.h"
+
 #include "spdlog/spdlog.h"
 #include "protocol/Client.h"
 
-int __cdecl wmain(ULONG, PWCHAR[])
+int __cdecl wmain(unsigned long argc, wchar_t **argv)
 {
-    ClientConfiguration client_config(L"127.0.0.1", L"9999");
-    Client client(client_config);
+    CommandLineScanResult scan_result = getConfigurationFromCommandLine(argc, argv);
+    if (std::holds_alternative<ConfigurationError>(scan_result)) {
+        const ConfigurationError &configuration_error = std::get<ConfigurationError>(scan_result);
+        spdlog::error(L"Scanning of command line arguments failed: {}", configuration_error.message);
+
+        return 1;
+    }
+
+    assert(std::holds_alternative<Configuration>(scan_result));
+
+    const Configuration configuration = std::get<Configuration>(scan_result);
+    ClientConfiguration client_configuration(configuration.server_host, configuration.server_port);
+    Client client(client_configuration);
+
     return 0;
 }

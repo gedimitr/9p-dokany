@@ -100,6 +100,7 @@
   <ItemGroup>
     <ClCompile Include="9pfs.cpp" />
     <ClCompile Include="9pfs_operations.cpp" />
+    <ClCompile Include="Config.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol\Client.cpp" />
     <ClCompile Include="protocol\FidTracker.cpp" />
@@ -111,6 +112,7 @@
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
     <ClInclude Include="9pfs_operations.h" />
+    <ClInclude Include="Config.h" />
     <ClInclude Include="protocol\Client.h" />
     <ClInclude Include="protocol\ConstantValues.h" />
     <ClInclude Include="protocol\DataTypes.h" />
