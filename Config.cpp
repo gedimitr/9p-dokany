@@ -21,6 +21,7 @@
 #include "Config.h"
 
 #include <cassert>
+#include <cwchar>
 #include <exception>
 
 #include "spdlog/spdlog.h"
@@ -63,7 +64,7 @@ std::wstring buildSloganOptionNeedsArgument(const std::wstring &opt_str)
     return slogan;
 }
 
-std::wstring buildSloganUnknownOption(const std::wstring& opt_str)
+std::wstring buildSloganUnknownOption(const std::wstring &opt_str)
 {
     std::wstring slogan = L"Option (";
     slogan += opt_str;
@@ -115,7 +116,7 @@ void evalCommandLineOption(unsigned long argc, wchar_t **argv, unsigned long *cu
     }
 }
 
-void validateConfiguration(const Configuration& configuration)
+void validateConfiguration(const Configuration &configuration)
 {
     if (configuration.server_host.empty()) {
         throw CommandLineConfigException(L"Server host is mandatory.");
@@ -124,6 +125,42 @@ void validateConfiguration(const Configuration& configuration)
     if (configuration.server_port.empty()) {
         throw CommandLineConfigException(L"Server port is mandatory");
     }
+}
+
+wchar_t *dupWString(const std::wstring &str)
+{
+    auto str_size = str.size();
+    if (str_size) {
+        wchar_t *new_str = new wchar_t[str.size() + 1];
+        wcscpy_s(new_str, str.size(), str.c_str());
+
+        return new_str;
+    } else {
+        return nullptr;
+    }
+}
+
+unsigned long buildDokanOptionsFlags(const Configuration& configuration)
+{
+    unsigned long flags = DOKAN_OPTION_WRITE_PROTECT;
+
+    if (configuration.debug) {
+        flags |= DOKAN_OPTION_DEBUG | DOKAN_OPTION_STDERR;
+    }
+
+    if (configuration.use_network_drive) {
+        flags |= DOKAN_OPTION_NETWORK;
+    } else if (configuration.use_removable_drive) {
+        flags |= DOKAN_OPTION_REMOVABLE;
+    } else {
+        flags |= DOKAN_OPTION_MOUNT_MANAGER;
+    }
+
+    if (configuration.use_for_current_session) {
+        flags |= DOKAN_OPTION_CURRENT_SESSION;
+    }
+
+    return flags;
 }
 
 } // anonymous namespace
@@ -154,4 +191,27 @@ CommandLineScanResult getConfigurationFromCommandLine(unsigned long argc, wchar_
         spdlog::debug(L"Command line configuration parsing exception: {}", e.slogan);
         return ConfigurationError(e.slogan);
     }
+}
+
+void deleteDokanOptions(DOKAN_OPTIONS *dokan_options)
+{
+    delete[] dokan_options->MountPoint;
+    delete[] dokan_options->UNCName;
+
+    delete dokan_options;
+}
+
+DokanOptionsUniquePtr getDokanOptions(const Configuration &configuration)
+{
+    DOKAN_OPTIONS *dokan_options = new DOKAN_OPTIONS;
+    memset(dokan_options, 0, sizeof(DOKAN_OPTIONS));
+
+    dokan_options->Version = DOKAN_VERSION;
+    dokan_options->ThreadCount = configuration.thread_count;
+    dokan_options->Options = buildDokanOptionsFlags(configuration);
+    dokan_options->MountPoint = dupWString(configuration.mount_point);
+    dokan_options->UNCName = dupWString(configuration.unc_provider_name);
+    dokan_options->Timeout = configuration.timeout_ms;
+
+    return DokanOptionsUniquePtr(dokan_options, &deleteDokanOptions);
 }

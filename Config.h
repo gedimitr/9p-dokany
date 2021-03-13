@@ -20,8 +20,11 @@
  */
 #pragma once
 
-#include <variant>
+#include <memory>
 #include <string>
+#include <variant>
+
+#include "dokan/dokan.h"
 
 struct Configuration
 {
@@ -35,7 +38,7 @@ struct Configuration
     bool use_removable_drive = false;
     bool use_for_current_session = false;
     bool use_network_drive = false;
-    int thread_count = 1;
+    unsigned short thread_count = 1;
     bool debug = false;
     int timeout_ms = 3000;
     bool allow_network_unmount = false;
@@ -43,7 +46,7 @@ struct Configuration
 
 struct ConfigurationError
 {
-    ConfigurationError(const std::wstring &message); 
+    ConfigurationError(const std::wstring &message);
 
     std::wstring message;
 };
@@ -51,3 +54,8 @@ struct ConfigurationError
 using CommandLineScanResult = std::variant<Configuration, ConfigurationError>;
 
 CommandLineScanResult getConfigurationFromCommandLine(unsigned long argc, wchar_t **argv);
+
+void deleteDokanOptions(DOKAN_OPTIONS *dokan_options);
+
+using DokanOptionsUniquePtr = std::unique_ptr<DOKAN_OPTIONS, decltype(&deleteDokanOptions)>;
+DokanOptionsUniquePtr getDokanOptions(const Configuration &configuration);

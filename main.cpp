@@ -20,6 +20,8 @@
  */
 #include "9pfs.h"
 
+#include <memory>
+
 #include "Config.h"
 
 #include "spdlog/spdlog.h"
@@ -39,7 +41,9 @@ int __cdecl wmain(unsigned long argc, wchar_t **argv)
 
     const Configuration configuration = std::get<Configuration>(scan_result);
     ClientConfiguration client_configuration(configuration.server_host, configuration.server_port);
-    Client client(client_configuration);
+    std::unique_ptr<Client> client = std::make_unique<Client>(client_configuration);
+    
+    DokanOptionsUniquePtr dokan_options = getDokanOptions(configuration);
 
     return 0;
 }
