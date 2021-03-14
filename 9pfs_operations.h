@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with 9p-dokany. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) 2021 Gerasimos Dimitriadis
+ * Copyright (C) 2020-2021 Gerasimos Dimitriadis
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
