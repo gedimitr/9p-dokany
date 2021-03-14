@@ -37,12 +37,12 @@ public:
     std::wstring slogan;
 };
 
-const wchar_t *USE_REMOVABLE_DRIVE_OPTION = L"/M";
-const wchar_t *USE_NETWORK_DRIVE_OPTION = L"/N";
+const wchar_t *USE_REMOVABLE_DRIVE_OPTION = L"/REMDRV";
+const wchar_t *USE_NETWORK_DRIVE_OPTION = L"/NETDRV";
 const wchar_t *USE_FOR_CURRENT_SESSION_OPTION = L"/C";
 const wchar_t *DEBUG_OPTION = L"/DEBUG";
 const wchar_t *ALLOW_NETWORK_UNMOUNT_OPTION = L"/X";
-const wchar_t *MOUNT_POINT_OPTION = L"/M";
+const wchar_t *MOUNT_POINT_OPTION = L"/MOUNT";
 const wchar_t *UNC_NAME_OPTION = L"/UNC";
 const wchar_t *SERVER_ADDR_OPTION = L"/S";
 const wchar_t *SERVER_PORT_OPTION = L"/P";
