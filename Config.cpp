@@ -132,7 +132,7 @@ wchar_t *dupWString(const std::wstring &str)
     auto str_size = str.size();
     if (str_size) {
         wchar_t *new_str = new wchar_t[str.size() + 1];
-        wcscpy_s(new_str, str.size(), str.c_str());
+        wcscpy_s(new_str, str.size() + 1, str.c_str());
 
         return new_str;
     } else {

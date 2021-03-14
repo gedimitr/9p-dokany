@@ -22,10 +22,12 @@
 
 #include <memory>
 
-#include "Config.h"
-
+#include "dokan/dokan.h"
 #include "spdlog/spdlog.h"
+
 #include "protocol/Client.h"
+#include "9pfs_operations.h"
+#include "Config.h"
 
 int __cdecl wmain(unsigned long argc, wchar_t **argv)
 {
@@ -45,5 +47,5 @@ int __cdecl wmain(unsigned long argc, wchar_t **argv)
     
     DokanOptionsUniquePtr dokan_options = getDokanOptions(configuration);
 
-    return 0;
+     return DokanMain(dokan_options.get(), &ninepfs_operations);
 }

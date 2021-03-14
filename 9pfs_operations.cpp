@@ -30,7 +30,7 @@ NTSTATUS DOKAN_CALLBACK ninepfs_createfile(LPCWSTR FileName, PDOKAN_IO_SECURITY_
                                            PDOKAN_FILE_INFO DokanFileInfo)
 {
     spdlog::info(L"CreateFile: {}", FileName);
-    return STATUS_ACCESS_DENIED;
+    return STATUS_SUCCESS;
 }
 
 void DOKAN_CALLBACK ninepfs_cleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo)
