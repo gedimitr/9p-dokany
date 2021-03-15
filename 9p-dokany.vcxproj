@@ -104,10 +104,11 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol\Client.cpp" />
     <ClCompile Include="protocol\FidTracker.cpp" />
+    <ClCompile Include="protocol\FileMode.cpp" />
     <ClCompile Include="protocol\MessageReader.cpp" />
     <ClCompile Include="protocol\TxMessage.cpp" />
     <ClCompile Include="protocol\TxMessageBuilder.cpp" />
-    <ClCompile Include="utils\TextConversion.cpp" />
+    <ClCompile Include="utils\TextUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -118,11 +119,12 @@
     <ClInclude Include="protocol\DataTypes.h" />
     <ClInclude Include="protocol\Exceptions.h" />
     <ClInclude Include="protocol\FidTracker.h" />
+    <ClInclude Include="protocol\FileMode.h" />
     <ClInclude Include="protocol\MessageReader.h" />
     <ClInclude Include="protocol\MessageTypes.h" />
     <ClInclude Include="protocol\TxMessage.h" />
     <ClInclude Include="protocol\TxMessageBuilder.h" />
-    <ClInclude Include="utils\TextConversion.h" />
+    <ClInclude Include="utils\TextUtilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="deps\dokany\dokan\dokan.vcxproj">

@@ -201,7 +201,7 @@ void deleteDokanOptions(DOKAN_OPTIONS *dokan_options)
     delete dokan_options;
 }
 
-DokanOptionsUniquePtr getDokanOptions(const Configuration &configuration)
+DokanOptionsUniquePtr buildDokanOptions(const Configuration &configuration)
 {
     DOKAN_OPTIONS *dokan_options = new DOKAN_OPTIONS;
     memset(dokan_options, 0, sizeof(DOKAN_OPTIONS));

@@ -18,34 +18,28 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "TextConversion.h"
+#pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <cstdint>
 
-std::wstring convertUtf8ToWstring(const std::string_view &str)
+class FileMode
 {
-    if (str.size() == 0) {
-        return std::wstring();
-    }
+public:
+    enum class Access
+    {
+        Read,
+        Write,
+        ReadWrite,
+        Execute
+    };
 
-    int wsize = MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), NULL, 0);
-    std::wstring wstr(wsize, 0);
+    FileMode(Access access);
 
-    MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), wstr.data(), wsize);
-    return wstr;
-}
+    uint8_t encode() const;
 
-std::string convertWstringToUtf8(const std::wstring_view &wstr)
-{
-    if (wstr.size() == 0) {
-        return std::string();
-    }
+    Access access;
+    bool truncate = false;
+    bool remove_on_close = false;
+};
 
-    int csize = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), NULL, 0, NULL, NULL);
-    std::string str(csize, 0);
-
-    WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), str.data(), csize, NULL, NULL);
-
-    return str;
-}
+FileMode decode(uint8_t value);

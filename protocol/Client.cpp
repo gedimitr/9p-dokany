@@ -30,11 +30,12 @@
 
 #include "ConstantValues.h"
 #include "FidTracker.h"
+#include "FileMode.h"
 #include "TxMessage.h"
 #include "TxMessageBuilder.h"
 #include "MessageReader.h"
 
-#include "utils/TextConversion.h"
+#include "utils/TextUtilities.h"
 #include "spdlog/spdlog.h"
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -196,7 +197,16 @@ MsgLength peekForMessageLength(SOCKET socket)
 
     assert(res > 0);
     return parseMessageLength(read_buf);
-} // namespace
+}
+
+void readRStatsFromData(const ParsedRRead& rread, std::vector<RStat>* rstats)
+{
+    std::string_view buffer = rread.data;
+
+    while (buffer.size()) {
+        rstats->push_back(parseRawRStat(buffer));
+    }
+}
 
 } // namespace
 
@@ -213,6 +223,15 @@ public:
     void sendAttachMessage(Fid fid);
 
     void sendAuthMessage();
+
+    std::vector<RStat> getDirectoryContents(const std::wstring &wpath);
+    Fid sendWalkMessage(const std::vector<std::string> &path_components);
+
+    ParsedROpen doOpen(Fid fid, FileMode file_mode);
+    void sendOpenMessage(Fid fid, FileMode file_mode);
+
+    ParsedRRead doRead(Fid fid, uint64_t offset, uint32_t count);
+    void sendReadMessage(Fid fid, uint64_t offset, uint32_t count);
 
     void sendMessageInTxBuffer();
     std::string readIncomingMessage();
@@ -400,6 +419,118 @@ std::string Client::Impl::readData(MsgLength msg_length)
     return incoming_buf;
 }
 
+std::vector<RStat> Client::Impl::getDirectoryContents(const std::wstring &wpath)
+{
+    std::string path = convertWstringToUtf8(wpath);
+    std::vector<std::string> path_components = splitToPathComponents(path);
+
+    Fid new_fid = sendWalkMessage(path_components);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRWalk>(response_payload)) {
+        spdlog::debug(L"Server responded to TWalk with RWalk");
+        const ParsedRWalk &parsed_rwalk = std::get<ParsedRWalk>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
+        throw UnexpectedMessageReceived();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TWalk");
+        throw UnexpectedMessageReceived();
+    }
+
+    FileMode file_mode(FileMode::Access::Read); 
+    ParsedROpen ropen = doOpen(new_fid, file_mode);
+
+    auto readData = [&](uint64_t offset) { return doRead(new_fid, offset, 65535); };
+
+    std::vector<RStat> rstats;
+    uint64_t offset = 0;
+    for (ParsedRRead rread = readData(0); rread.data.size() > 0; rread = readData(offset)) {
+        readRStatsFromData(rread, &rstats);
+
+        offset += rread.data.size();
+    }
+
+    return rstats;
+}
+
+Fid Client::Impl::sendWalkMessage(const std::vector<std::string> &path_components)
+{
+    Tag tag = m_tag_issuer.issue();
+
+    const FidEntry *root_fid_entry = m_fid_tracker.getRootEntry();
+    Fid root_fid = root_fid_entry->fid;
+    Fid new_fid = m_fid_issuer.issue();
+
+    m_tx_msg_builder.buildTWalk(tag, root_fid, new_fid, path_components);
+    sendMessageInTxBuffer();
+
+    return new_fid;
+}
+
+ParsedROpen Client::Impl::doOpen(Fid fid, FileMode file_mode)
+{
+    sendOpenMessage(fid, file_mode);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedROpen>(response_payload)) {
+        spdlog::debug(L"Server responded to TOpen with ROpen");
+        return std::get<ParsedROpen>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TOpen sent, with ename: {}", w_ename);
+        throw ErrorMessageReceived();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TOpen");
+        throw UnexpectedMessageReceived();
+    }
+}
+
+void Client::Impl::sendOpenMessage(Fid fid, FileMode file_mode)
+{
+    Tag tag = m_tag_issuer.issue();
+
+    uint8_t encoded_file_mode = file_mode.encode();
+    m_tx_msg_builder.buildTOpen(tag, fid, encoded_file_mode);
+    sendMessageInTxBuffer();
+}
+
+ParsedRRead Client::Impl::doRead(Fid fid, uint64_t offset, uint32_t count)
+{
+    sendReadMessage(fid, offset, count);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRRead>(response_payload)) {
+        spdlog::debug(L"Server responded to TRead with RRead");
+        return std::get<ParsedRRead>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TRead sent, with ename: {}", w_ename);
+        throw ErrorMessageReceived();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TOpen");
+        throw UnexpectedMessageReceived();
+    }
+}
+
+void Client::Impl::sendReadMessage(Fid fid, uint64_t offset, uint32_t count)
+{
+    Tag tag = m_tag_issuer.issue();
+
+    m_tx_msg_builder.buildTRead(tag, fid, offset, count);
+    sendMessageInTxBuffer();
+}
+
 Client::Client(const ClientConfiguration &config) : m_i(new Impl(config))
 {}
 
@@ -408,3 +539,8 @@ Client::Client(const ClientConfiguration &config) : m_i(new Impl(config))
 // recorded in it.
 Client::~Client()
 {}
+
+std::vector<RStat> Client::getDirectoryContents(const std::wstring &wpath)
+{
+    return m_i->getDirectoryContents(wpath);
+}

@@ -45,7 +45,8 @@ int __cdecl wmain(unsigned long argc, wchar_t **argv)
     ClientConfiguration client_configuration(configuration.server_host, configuration.server_port);
     std::unique_ptr<Client> client = std::make_unique<Client>(client_configuration);
     
-    DokanOptionsUniquePtr dokan_options = getDokanOptions(configuration);
+    DokanOptionsUniquePtr dokan_options = buildDokanOptions(configuration);
+    dokan_options->GlobalContext = reinterpret_cast<uint64_t>(client.get());
 
      return DokanMain(dokan_options.get(), &ninepfs_operations);
 }

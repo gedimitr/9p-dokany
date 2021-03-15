@@ -21,6 +21,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 std::wstring convertUtf8ToWstring(const std::string_view &str);
 std::string convertWstringToUtf8(const std::wstring_view &wstr);
+
+std::vector<std::string> splitToPathComponents(const std::string &str);

@@ -23,8 +23,10 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "Exceptions.h"
+#include "DataTypes.h"
 
 struct ClientConfiguration
 {
@@ -42,6 +44,8 @@ class Client
 public:
     Client(const ClientConfiguration &config);
     ~Client();
+
+    std::vector<RStat> getDirectoryContents(const std::wstring &wpath);
 
     Client(const Client &) = delete;
     Client &operator=(const Client &) = delete;

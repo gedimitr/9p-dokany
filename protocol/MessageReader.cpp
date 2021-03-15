@@ -42,7 +42,7 @@ inline T parseInteger(std::string_view &buffer)
 
     T value = 0;
     for (int i = 0; i < sizeof(T); i++) {
-        T byte = buffer[i];
+        T byte = buffer[i] & 0xff;
         value = value | (byte << (8 * i));
     }
 
@@ -157,24 +157,7 @@ ParsedRWrite parseRWrite(std::string_view &buffer)
 
 ParsedRStat parseRStat(std::string_view &buffer)
 {
-    RStat stat;
-
-    uint16_t size = parseInteger<uint16_t>(buffer);
-    std::string_view stat_buffer = extractDataView(size, buffer);
-
-    stat.type = parseInteger<uint16_t>(stat_buffer);
-    stat.dev = parseInteger<uint32_t>(stat_buffer);
-    stat.qid = parseQid(stat_buffer);
-    stat.mode = parseInteger<uint32_t>(stat_buffer);
-    stat.atime = parseInteger<uint32_t>(stat_buffer);
-    stat.mtime = parseInteger<uint32_t>(stat_buffer);
-    stat.length = parseInteger<uint64_t>(stat_buffer);
-    stat.name = parseString(stat_buffer);
-    stat.uid = parseString(stat_buffer);
-    stat.gid = parseString(stat_buffer);
-    stat.muid = parseString(stat_buffer);
-
-    return ParsedRStat(stat);
+    return parseRawRStat(buffer);
 }
 
 } // namespace
@@ -230,4 +213,26 @@ MsgLength parseMessageLength(const char* buf)
 {
     std::string_view string_view(buf, sizeof(MsgLength));
     return parseInteger<MsgLength>(string_view);
+}
+
+RStat parseRawRStat(std::string_view &buffer)
+{
+    RStat stat;
+
+    uint16_t size = parseInteger<uint16_t>(buffer);
+    std::string_view stat_buffer = extractDataView(size, buffer);
+
+    stat.type = parseInteger<uint16_t>(stat_buffer);
+    stat.dev = parseInteger<uint32_t>(stat_buffer);
+    stat.qid = parseQid(stat_buffer);
+    stat.mode = parseInteger<uint32_t>(stat_buffer);
+    stat.atime = parseInteger<uint32_t>(stat_buffer);
+    stat.mtime = parseInteger<uint32_t>(stat_buffer);
+    stat.length = parseInteger<uint64_t>(stat_buffer);
+    stat.name = parseString(stat_buffer);
+    stat.uid = parseString(stat_buffer);
+    stat.gid = parseString(stat_buffer);
+    stat.muid = parseString(stat_buffer);
+
+    return stat;
 }

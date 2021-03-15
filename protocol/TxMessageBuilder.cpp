@@ -87,7 +87,7 @@ void TxMessageBuilder::buildTAttach(Tag tag, Fid fid, Fid afid, const std::strin
     m_tx_message->writeString(aname);
 }
 
-void TxMessageBuilder::buildTWalk(Tag tag, Fid fid, Fid newfid, const std::vector<std::string_view> &wnames)
+void TxMessageBuilder::buildTWalk(Tag tag, Fid fid, Fid newfid, const std::vector<std::string> &wnames)
 {
     m_tx_message->initialize(msg_type::TWalk);
 

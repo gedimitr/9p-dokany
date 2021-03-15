@@ -15,12 +15,15 @@
     <ClCompile Include="protocol\Client.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
-    <ClCompile Include="utils\TextConversion.cpp" />
+    <ClCompile Include="utils\TextUtilities.cpp" />
     <ClCompile Include="protocol\FidTracker.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
     <ClCompile Include="9pfs_operations.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="protocol\FileMode.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="9pfs.h" />
@@ -45,7 +48,7 @@
     <ClInclude Include="protocol\Client.h">
       <Filter>protocol</Filter>
     </ClInclude>
-    <ClInclude Include="utils\TextConversion.h" />
+    <ClInclude Include="utils\TextUtilities.h" />
     <ClInclude Include="protocol\ConstantValues.h">
       <Filter>protocol</Filter>
     </ClInclude>
@@ -54,6 +57,9 @@
     </ClInclude>
     <ClInclude Include="9pfs_operations.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="protocol\FileMode.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="protocol">

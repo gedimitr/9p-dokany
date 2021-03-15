@@ -58,4 +58,4 @@ CommandLineScanResult getConfigurationFromCommandLine(unsigned long argc, wchar_
 void deleteDokanOptions(DOKAN_OPTIONS *dokan_options);
 
 using DokanOptionsUniquePtr = std::unique_ptr<DOKAN_OPTIONS, decltype(&deleteDokanOptions)>;
-DokanOptionsUniquePtr getDokanOptions(const Configuration &configuration);
+DokanOptionsUniquePtr buildDokanOptions(const Configuration &configuration);

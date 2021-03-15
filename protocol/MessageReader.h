@@ -93,7 +93,7 @@ struct ParsedRRead
     ParsedRRead(std::string_view data) : data(data)
     {}
 
-    std::string_view data;
+    std::string data;
 };
 
 struct ParsedRWrite
@@ -137,3 +137,5 @@ struct ParsedRMessage
 ParsedRMessage parseMessage(std::string_view msg);
 
 MsgLength parseMessageLength(const char *buf);
+
+RStat parseRawRStat(std::string_view &buffer);

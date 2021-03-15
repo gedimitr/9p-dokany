@@ -22,7 +22,15 @@
 
 #include "spdlog/spdlog.h"
 
+#include "protocol/Client.h"
+
 namespace {
+
+inline Client *getContextClient(DOKAN_FILE_INFO *dokan_file_info)
+{
+    uint64_t context_value = dokan_file_info->DokanOptions->GlobalContext;
+    return reinterpret_cast<Client *>(context_value);
+}
 
 NTSTATUS DOKAN_CALLBACK ninepfs_createfile(LPCWSTR FileName, PDOKAN_IO_SECURITY_CONTEXT SecurityContext,
                                            ACCESS_MASK DesiredAccess, ULONG FileAttributes, ULONG ShareAccess,
@@ -74,6 +82,11 @@ NTSTATUS DOKAN_CALLBACK ninepfs_getfileInformation(LPCWSTR FileName, LPBY_HANDLE
 NTSTATUS DOKAN_CALLBACK ninepfs_findfiles(LPCWSTR FileName, PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo)
 {
     spdlog::info(L"FindFiles: {}", FileName);
+
+    Client *ninep_client = getContextClient(DokanFileInfo);
+    std::vector<RStat> rstats = ninep_client->getDirectoryContents(FileName);
+    spdlog::debug(L"9P Client returned {} RStat entities as directory contents", rstats.size());
+
     return STATUS_SUCCESS;
 }
 

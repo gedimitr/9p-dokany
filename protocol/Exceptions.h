@@ -127,6 +127,15 @@ public:
     }
 };
 
+class ErrorMessageReceived : public ClientException
+{
+public:
+    const char *what() const noexcept override
+    {
+        return "Error Message Received";
+    }
+};
+
 class ServerRequestedAuthentication : public ClientException
 {
 public:

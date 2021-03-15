@@ -56,4 +56,4 @@ struct StatTemplate
 };
 
 typedef StatTemplate<std::string> TStat;
-typedef StatTemplate<std::string_view> RStat;
+typedef StatTemplate<std::string> RStat;
