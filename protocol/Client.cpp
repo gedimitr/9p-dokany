@@ -225,13 +225,21 @@ public:
     void sendAuthMessage();
 
     std::vector<RStat> getDirectoryContents(const std::wstring &wpath);
+    std::optional<RStat> getFileInformation(const std::wstring &wpath);
+
     Fid sendWalkMessage(const std::vector<std::string> &path_components);
 
     ParsedROpen doOpen(Fid fid, FileMode file_mode);
     void sendOpenMessage(Fid fid, FileMode file_mode);
 
+    ParsedRStat doStat(Fid fid);
+    void sendStatMessage(Fid fid);
+
     ParsedRRead doRead(Fid fid, uint64_t offset, uint32_t count);
     void sendReadMessage(Fid fid, uint64_t offset, uint32_t count);
+
+    ParsedRClunk doClunk(Fid fid);
+    void sendClunkMessage(Fid fid);
 
     void sendMessageInTxBuffer();
     std::string readIncomingMessage();
@@ -455,7 +463,39 @@ std::vector<RStat> Client::Impl::getDirectoryContents(const std::wstring &wpath)
         offset += rread.data.size();
     }
 
+    doClunk(new_fid);
+
     return rstats;
+}
+
+std::optional<RStat> Client::Impl::getFileInformation(const std::wstring &wpath)
+{
+    std::string path = convertWstringToUtf8(wpath);
+    std::vector<std::string> path_components = splitToPathComponents(path);
+
+    Fid new_fid = sendWalkMessage(path_components);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRWalk>(response_payload)) {
+        spdlog::debug(L"Server responded to TWalk with RWalk");
+        const ParsedRWalk &parsed_rwalk = std::get<ParsedRWalk>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
+        return std::nullopt;
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TWalk");
+        throw UnexpectedMessageReceived();
+    }
+
+    ParsedRStat parsed_rstat = doStat(new_fid);
+
+    doClunk(new_fid);
+
+    return parsed_rstat.stat;
 }
 
 Fid Client::Impl::sendWalkMessage(const std::vector<std::string> &path_components)
@@ -502,6 +542,35 @@ void Client::Impl::sendOpenMessage(Fid fid, FileMode file_mode)
     sendMessageInTxBuffer();
 }
 
+ParsedRStat Client::Impl::doStat(Fid fid)
+{
+    sendStatMessage(fid);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRStat>(response_payload)) {
+        spdlog::debug(L"Server responded to TStat with RStat");
+        return std::get<ParsedRStat>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TStat sent, with ename: {}", w_ename);
+        throw ErrorMessageReceived();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TStat");
+        throw UnexpectedMessageReceived();
+    }
+}
+
+void Client::Impl::sendStatMessage(Fid fid)
+{
+    Tag tag = m_tag_issuer.issue();
+
+    m_tx_msg_builder.buildTStat(tag, fid);
+    sendMessageInTxBuffer();
+}
+
 ParsedRRead Client::Impl::doRead(Fid fid, uint64_t offset, uint32_t count)
 {
     sendReadMessage(fid, offset, count);
@@ -531,6 +600,35 @@ void Client::Impl::sendReadMessage(Fid fid, uint64_t offset, uint32_t count)
     sendMessageInTxBuffer();
 }
 
+ParsedRClunk Client::Impl::doClunk(Fid fid)
+{
+    sendClunkMessage(fid);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRClunk>(response_payload)) {
+        spdlog::debug(L"Server responded to TClunk with RClunk");
+        return std::get<ParsedRClunk>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TClunk sent, with ename: {}", w_ename);
+        throw ErrorMessageReceived();
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TOpen");
+        throw UnexpectedMessageReceived();
+    }
+}
+
+void Client::Impl::sendClunkMessage(Fid fid)
+{
+    Tag tag = m_tag_issuer.issue();
+
+    m_tx_msg_builder.buildTClunk(tag, fid);
+    sendMessageInTxBuffer();
+}
+
 Client::Client(const ClientConfiguration &config) : m_i(new Impl(config))
 {}
 
@@ -543,4 +641,9 @@ Client::~Client()
 std::vector<RStat> Client::getDirectoryContents(const std::wstring &wpath)
 {
     return m_i->getDirectoryContents(wpath);
+}
+
+std::optional<RStat> Client::getFileInformation(const std::wstring &wpath)
+{
+    return m_i->getFileInformation(wpath);
 }

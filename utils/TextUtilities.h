@@ -26,4 +26,6 @@
 std::wstring convertUtf8ToWstring(const std::string_view &str);
 std::string convertWstringToUtf8(const std::wstring_view &wstr);
 
+void copyUtf8StringToWcharArr(const std::string_view &str, wchar_t *warr, size_t warr_size);
+
 std::vector<std::string> splitToPathComponents(const std::string &str);

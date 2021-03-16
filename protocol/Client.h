@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -46,6 +47,7 @@ public:
     ~Client();
 
     std::vector<RStat> getDirectoryContents(const std::wstring &wpath);
+    std::optional<RStat> getFileInformation(const std::wstring &wpath);
 
     Client(const Client &) = delete;
     Client &operator=(const Client &) = delete;

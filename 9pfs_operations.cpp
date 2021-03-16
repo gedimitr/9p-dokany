@@ -23,6 +23,7 @@
 #include "spdlog/spdlog.h"
 
 #include "protocol/Client.h"
+#include "utils/TextUtilities.h"
 
 namespace {
 
@@ -72,11 +73,65 @@ NTSTATUS DOKAN_CALLBACK ninepfs_flushfilebuffers(LPCWSTR FileName, PDOKAN_FILE_I
     return STATUS_SUCCESS;
 }
 
-NTSTATUS DOKAN_CALLBACK ninepfs_getfileInformation(LPCWSTR FileName, LPBY_HANDLE_FILE_INFORMATION Buffer,
-                                                   PDOKAN_FILE_INFO DokanFileInfo)
+void splitInt64(uint64_t input, DWORD *high, DWORD *low)
 {
-    spdlog::info(L"GetFileInformation: {}", FileName);
-    return STATUS_SUCCESS;
+    *high = static_cast<DWORD>(input >> 32);
+    *low = static_cast<DWORD>(input & 0xffffffff);
+}
+
+void storeTimestampIntoFiletime(uint64_t input, FILETIME *filetime)
+{
+    const uint64_t epoch_diff = 11'644'473'600;
+
+    input += epoch_diff;
+    input *= 10'000'000;
+    splitInt64(input, &(filetime->dwHighDateTime), &(filetime->dwLowDateTime));
+}
+
+void fillByHandleFileInformation(const RStat &rstat, BY_HANDLE_FILE_INFORMATION *by_handle_file_information)
+{
+    by_handle_file_information->dwFileAttributes =
+        (rstat.qid.type & 0x80) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+    storeTimestampIntoFiletime(rstat.mtime, &by_handle_file_information->ftCreationTime);
+    storeTimestampIntoFiletime(rstat.mtime, &by_handle_file_information->ftLastWriteTime);
+    storeTimestampIntoFiletime(rstat.atime, &by_handle_file_information->ftLastAccessTime);
+    by_handle_file_information->dwVolumeSerialNumber = 0x11223344;
+    
+    splitInt64(rstat.length, &by_handle_file_information->nFileSizeHigh, &by_handle_file_information->nFileSizeLow);
+    by_handle_file_information->nNumberOfLinks = 1;
+    splitInt64(rstat.qid.path, &by_handle_file_information->nFileIndexHigh,
+               &by_handle_file_information->nFileIndexLow);
+}
+
+NTSTATUS DOKAN_CALLBACK ninepfs_getfileInformation(LPCWSTR file_name, LPBY_HANDLE_FILE_INFORMATION buffer,
+                                                   PDOKAN_FILE_INFO dokan_file_info)
+{
+    spdlog::info(L"GetFileInformation: {}", file_name);
+
+    Client *ninep_client = getContextClient(dokan_file_info);
+    std::optional<RStat> rstat = ninep_client->getFileInformation(file_name);
+
+    if (rstat) {
+        fillByHandleFileInformation(*rstat, buffer);
+        return STATUS_SUCCESS;
+    } else {
+        return STATUS_FILE_NOT_AVAILABLE;
+    }
+}
+
+void fillFindDataWithRStat(const RStat &rstat, PFillFindData fill_find_data, PDOKAN_FILE_INFO dokan_file_info)
+{
+    WIN32_FIND_DATAW find_data;
+
+    find_data.dwFileAttributes = (rstat.qid.type & 0x80) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+    copyUtf8StringToWcharArr(rstat.name, find_data.cFileName, MAX_PATH);
+    storeTimestampIntoFiletime(rstat.mtime, &find_data.ftCreationTime);
+    storeTimestampIntoFiletime(rstat.mtime, &find_data.ftLastWriteTime);
+    storeTimestampIntoFiletime(rstat.atime, &find_data.ftLastAccessTime);
+
+    splitInt64(rstat.length, &find_data.nFileSizeHigh, &find_data.nFileSizeLow);
+
+    fill_find_data(&find_data, dokan_file_info);
 }
 
 NTSTATUS DOKAN_CALLBACK ninepfs_findfiles(LPCWSTR FileName, PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo)
@@ -86,6 +141,10 @@ NTSTATUS DOKAN_CALLBACK ninepfs_findfiles(LPCWSTR FileName, PFillFindData FillFi
     Client *ninep_client = getContextClient(DokanFileInfo);
     std::vector<RStat> rstats = ninep_client->getDirectoryContents(FileName);
     spdlog::debug(L"9P Client returned {} RStat entities as directory contents", rstats.size());
+
+    for (const RStat &run_rstat : rstats) {
+        fillFindDataWithRStat(run_rstat, FillFindData, DokanFileInfo);
+    }
 
     return STATUS_SUCCESS;
 }

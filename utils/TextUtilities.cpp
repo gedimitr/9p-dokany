@@ -50,6 +50,13 @@ std::string convertWstringToUtf8(const std::wstring_view &wstr)
     return str;
 }
 
+void copyUtf8StringToWcharArr(const std::string_view &str, wchar_t *warr, size_t warr_size)
+{
+    std::wstring wname = convertUtf8ToWstring(str);
+    wcsncpy_s(warr, warr_size, wname.c_str(), warr_size - 1);
+    warr[warr_size - 1] = L'\0';
+}
+
 std::vector<std::string> splitToPathComponents(const std::string &str)
 {
     std::vector<std::string> path_components;
