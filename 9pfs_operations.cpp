@@ -39,6 +39,12 @@ NTSTATUS DOKAN_CALLBACK ninepfs_createfile(LPCWSTR FileName, PDOKAN_IO_SECURITY_
                                            PDOKAN_FILE_INFO DokanFileInfo)
 {
     spdlog::info(L"CreateFile: {}", FileName);
+
+    std::wstring filename_str = FileName;
+    if (filename_str == L"\\System Volume Information" || filename_str == L"\\$RECYCLE.BIN") {
+        return STATUS_NO_SUCH_FILE;
+    }
+
     return STATUS_SUCCESS;
 }
 
@@ -52,10 +58,12 @@ void DOKAN_CALLBACK ninepfs_closeFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFi
     spdlog::info(L"CloseFile: {}", FileName);
 }
 
-NTSTATUS DOKAN_CALLBACK ninepfs_readfile(LPCWSTR FileName, LPVOID Buffer, DWORD BufferLength, LPDWORD ReadLength,
-                                         LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo)
+NTSTATUS DOKAN_CALLBACK ninepfs_readfile(LPCWSTR file_name, LPVOID buffer, DWORD buffer_length, LPDWORD read_length,
+                                         LONGLONG offset, PDOKAN_FILE_INFO dokan_file_info)
 {
-    spdlog::info(L"ReadFile: {}", FileName);
+    spdlog::info(L"ReadFile: {}, buffer_length: {}, read_length: {}, offset: {}", file_name, buffer_length, *read_length, offset);
+    Client *ninep_client = getContextClient(dokan_file_info);
+    *read_length = ninep_client->readFile(file_name, offset, buffer, buffer_length);
     return STATUS_SUCCESS;
 }
 
@@ -96,7 +104,7 @@ void fillByHandleFileInformation(const RStat &rstat, BY_HANDLE_FILE_INFORMATION 
     storeTimestampIntoFiletime(rstat.mtime, &by_handle_file_information->ftLastWriteTime);
     storeTimestampIntoFiletime(rstat.atime, &by_handle_file_information->ftLastAccessTime);
     by_handle_file_information->dwVolumeSerialNumber = 0x11223344;
-    
+
     splitInt64(rstat.length, &by_handle_file_information->nFileSizeHigh, &by_handle_file_information->nFileSizeLow);
     by_handle_file_information->nNumberOfLinks = 1;
     splitInt64(rstat.qid.path, &by_handle_file_information->nFileIndexHigh,
@@ -252,7 +260,7 @@ NTSTATUS DOKAN_CALLBACK ninepfs_getfilesecurity(LPCWSTR FileName, PSECURITY_INFO
                                                 PULONG LengthNeeded, PDOKAN_FILE_INFO DokanFileInfo)
 {
     spdlog::info(L"GetFileSecurity: {}", FileName);
-    return STATUS_SUCCESS;
+    return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS DOKAN_CALLBACK ninepfs_setfilesecurity(LPCWSTR FileName, PSECURITY_INFORMATION SecurityInformation,

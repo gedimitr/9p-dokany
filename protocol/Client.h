@@ -48,6 +48,7 @@ public:
 
     std::vector<RStat> getDirectoryContents(const std::wstring &wpath);
     std::optional<RStat> getFileInformation(const std::wstring &wpath);
+    int64_t readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length);
 
     Client(const Client &) = delete;
     Client &operator=(const Client &) = delete;

@@ -199,7 +199,7 @@ MsgLength peekForMessageLength(SOCKET socket)
     return parseMessageLength(read_buf);
 }
 
-void readRStatsFromData(const ParsedRRead& rread, std::vector<RStat>* rstats)
+void readRStatsFromData(const ParsedRRead &rread, std::vector<RStat> *rstats)
 {
     std::string_view buffer = rread.data;
 
@@ -226,6 +226,7 @@ public:
 
     std::vector<RStat> getDirectoryContents(const std::wstring &wpath);
     std::optional<RStat> getFileInformation(const std::wstring &wpath);
+    int64_t readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length);
 
     Fid sendWalkMessage(const std::vector<std::string> &path_components);
 
@@ -450,7 +451,7 @@ std::vector<RStat> Client::Impl::getDirectoryContents(const std::wstring &wpath)
         throw UnexpectedMessageReceived();
     }
 
-    FileMode file_mode(FileMode::Access::Read); 
+    FileMode file_mode(FileMode::Access::Read);
     ParsedROpen ropen = doOpen(new_fid, file_mode);
 
     auto readData = [&](uint64_t offset) { return doRead(new_fid, offset, 65535); };
@@ -496,6 +497,46 @@ std::optional<RStat> Client::Impl::getFileInformation(const std::wstring &wpath)
     doClunk(new_fid);
 
     return parsed_rstat.stat;
+}
+
+int64_t Client::Impl::readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length)
+{
+    std::string path = convertWstringToUtf8(wpath);
+    std::vector<std::string> path_components = splitToPathComponents(path);
+
+    Fid new_fid = sendWalkMessage(path_components);
+
+    ParsedRMessage response = readParseIncomingMessage();
+
+    const ParsedRMessagePayload &response_payload = response.payload;
+    if (std::holds_alternative<ParsedRWalk>(response_payload)) {
+        spdlog::debug(L"Server responded to TWalk with RWalk");
+        const ParsedRWalk &parsed_rwalk = std::get<ParsedRWalk>(response_payload);
+    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
+        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+        spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
+        return 0;
+    } else {
+        spdlog::error(L"Unexpected message received while waiting for response to TWalk");
+        throw UnexpectedMessageReceived();
+    }
+
+    FileMode file_mode(FileMode::Access::Read);
+    ParsedROpen ropen = doOpen(new_fid, file_mode);
+
+    size_t read_size = 0;
+    try {
+        ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length);
+
+        read_size = parsed_rread.data.size();
+        memcpy_s(buffer, buffer_length, parsed_rread.data.c_str(), read_size);
+    }
+    catch (...) {
+    }
+
+    doClunk(new_fid);
+    return read_size;
 }
 
 Fid Client::Impl::sendWalkMessage(const std::vector<std::string> &path_components)
@@ -646,4 +687,9 @@ std::vector<RStat> Client::getDirectoryContents(const std::wstring &wpath)
 std::optional<RStat> Client::getFileInformation(const std::wstring &wpath)
 {
     return m_i->getFileInformation(wpath);
+}
+
+int64_t Client::readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length)
+{
+    return m_i->readFile(wpath, offset, buffer, buffer_length);
 }
