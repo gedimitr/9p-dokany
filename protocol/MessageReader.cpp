@@ -157,7 +157,10 @@ ParsedRWrite parseRWrite(std::string_view &buffer)
 
 ParsedRStat parseRStat(std::string_view &buffer)
 {
-    return parseRawRStat(buffer);
+    uint16_t size = parseInteger<uint16_t>(buffer);
+    std::string_view rstat_buffer = extractDataView(size, buffer);
+
+    return parseRawRStat(rstat_buffer);
 }
 
 } // namespace
