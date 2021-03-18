@@ -530,7 +530,10 @@ int64_t Client::Impl::readFile(const std::wstring &wpath, uint64_t offset, void 
         ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length);
 
         read_size = parsed_rread.data.size();
-        memcpy_s(buffer, buffer_length, parsed_rread.data.c_str(), read_size);
+
+        // It is possible that server sent back more data than what we requested
+        size_t data_to_copy_count = min(read_size, buffer_length);
+        memcpy_s(buffer, buffer_length, parsed_rread.data.c_str(), data_to_copy_count);
     }
     catch (...) {
     }
