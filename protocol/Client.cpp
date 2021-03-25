@@ -228,6 +228,7 @@ public:
     std::optional<RStat> getFileInformation(const std::wstring &wpath);
     int64_t readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length);
 
+    Fid doWalk(const std::wstring &wpath);
     Fid sendWalkMessage(const std::vector<std::string> &path_components);
 
     ParsedROpen doOpen(Fid fid, FileMode file_mode);
@@ -430,26 +431,7 @@ std::string Client::Impl::readData(MsgLength msg_length)
 
 std::vector<RStat> Client::Impl::getDirectoryContents(const std::wstring &wpath)
 {
-    std::string path = convertWstringToUtf8(wpath);
-    std::vector<std::string> path_components = splitToPathComponents(path);
-
-    Fid new_fid = sendWalkMessage(path_components);
-
-    ParsedRMessage response = readParseIncomingMessage();
-
-    const ParsedRMessagePayload &response_payload = response.payload;
-    if (std::holds_alternative<ParsedRWalk>(response_payload)) {
-        spdlog::debug(L"Server responded to TWalk with RWalk");
-        const ParsedRWalk &parsed_rwalk = std::get<ParsedRWalk>(response_payload);
-    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
-        throw UnexpectedMessageReceived();
-    } else {
-        spdlog::error(L"Unexpected message received while waiting for response to TWalk");
-        throw UnexpectedMessageReceived();
-    }
+    Fid new_fid = doWalk(wpath);
 
     FileMode file_mode(FileMode::Access::Read);
     ParsedROpen ropen = doOpen(new_fid, file_mode);
@@ -471,26 +453,7 @@ std::vector<RStat> Client::Impl::getDirectoryContents(const std::wstring &wpath)
 
 std::optional<RStat> Client::Impl::getFileInformation(const std::wstring &wpath)
 {
-    std::string path = convertWstringToUtf8(wpath);
-    std::vector<std::string> path_components = splitToPathComponents(path);
-
-    Fid new_fid = sendWalkMessage(path_components);
-
-    ParsedRMessage response = readParseIncomingMessage();
-
-    const ParsedRMessagePayload &response_payload = response.payload;
-    if (std::holds_alternative<ParsedRWalk>(response_payload)) {
-        spdlog::debug(L"Server responded to TWalk with RWalk");
-        const ParsedRWalk &parsed_rwalk = std::get<ParsedRWalk>(response_payload);
-    } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
-        return std::nullopt;
-    } else {
-        spdlog::error(L"Unexpected message received while waiting for response to TWalk");
-        throw UnexpectedMessageReceived();
-    }
+    Fid new_fid = doWalk(wpath);
 
     ParsedRStat parsed_rstat = doStat(new_fid);
 
@@ -500,6 +463,27 @@ std::optional<RStat> Client::Impl::getFileInformation(const std::wstring &wpath)
 }
 
 int64_t Client::Impl::readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length)
+{
+    Fid new_fid = doWalk(wpath);
+
+    FileMode file_mode(FileMode::Access::Read);
+    ParsedROpen ropen = doOpen(new_fid, file_mode);
+
+    size_t read_size = 0;
+
+    ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length);
+
+    read_size = parsed_rread.data.size();
+
+    // It is possible that server sent back more data than what we requested
+    size_t data_to_copy_count = min(read_size, buffer_length);
+    memcpy_s(buffer, buffer_length, parsed_rread.data.c_str(), data_to_copy_count);
+
+    doClunk(new_fid);
+    return read_size;
+}
+
+Fid Client::Impl::doWalk(const std::wstring &wpath)
 {
     std::string path = convertWstringToUtf8(wpath);
     std::vector<std::string> path_components = splitToPathComponents(path);
@@ -511,35 +495,16 @@ int64_t Client::Impl::readFile(const std::wstring &wpath, uint64_t offset, void 
     const ParsedRMessagePayload &response_payload = response.payload;
     if (std::holds_alternative<ParsedRWalk>(response_payload)) {
         spdlog::debug(L"Server responded to TWalk with RWalk");
-        const ParsedRWalk &parsed_rwalk = std::get<ParsedRWalk>(response_payload);
+        return new_fid;
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
         const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
         std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
         spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
-        return 0;
+        throw ErrorMessageReceived();
     } else {
         spdlog::error(L"Unexpected message received while waiting for response to TWalk");
         throw UnexpectedMessageReceived();
     }
-
-    FileMode file_mode(FileMode::Access::Read);
-    ParsedROpen ropen = doOpen(new_fid, file_mode);
-
-    size_t read_size = 0;
-    try {
-        ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length);
-
-        read_size = parsed_rread.data.size();
-
-        // It is possible that server sent back more data than what we requested
-        size_t data_to_copy_count = min(read_size, buffer_length);
-        memcpy_s(buffer, buffer_length, parsed_rread.data.c_str(), data_to_copy_count);
-    }
-    catch (...) {
-    }
-
-    doClunk(new_fid);
-    return read_size;
 }
 
 Fid Client::Impl::sendWalkMessage(const std::vector<std::string> &path_components)
@@ -694,5 +659,10 @@ std::optional<RStat> Client::getFileInformation(const std::wstring &wpath)
 
 int64_t Client::readFile(const std::wstring &wpath, uint64_t offset, void *buffer, uint64_t buffer_length)
 {
-    return m_i->readFile(wpath, offset, buffer, buffer_length);
+    try {
+        return m_i->readFile(wpath, offset, buffer, buffer_length);
+    }
+    catch (...) {
+        return -1;
+    }
 }
