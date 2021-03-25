@@ -35,6 +35,7 @@
 #include "TxMessageBuilder.h"
 #include "MessageReader.h"
 
+#include "gsl/gsl_util"
 #include "utils/TextUtilities.h"
 #include "spdlog/spdlog.h"
 
@@ -469,11 +470,10 @@ int64_t Client::Impl::readFile(const std::wstring &wpath, uint64_t offset, void 
     FileMode file_mode(FileMode::Access::Read);
     ParsedROpen ropen = doOpen(new_fid, file_mode);
 
-    size_t read_size = 0;
+    uint32_t buffer_length32 = gsl::narrow<uint32_t>(buffer_length);
+    ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length32);
 
-    ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length);
-
-    read_size = parsed_rread.data.size();
+    size_t read_size = parsed_rread.data.size();
 
     // It is possible that server sent back more data than what we requested
     size_t data_to_copy_count = min(read_size, buffer_length);
