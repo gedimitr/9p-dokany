@@ -209,12 +209,19 @@ void readRStatsFromData(const ParsedRRead &rread, std::vector<RStat> *rstats)
     }
 }
 
+void logErrorReceivedFor(const ParsedRMessagePayload &response_payload, const wchar_t *msg_sent)
+{
+    const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
+    std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
+    spdlog::error(L"Server responded with RError to {} sent, with ename: {}", msg_sent, w_ename);
+}
+
 } // namespace
 
 class Client::Impl
 {
 public:
-    Impl(const ClientConfiguration &config);
+    explicit Impl(const ClientConfiguration &config);
     ~Impl();
 
     void connectToServer();
@@ -435,7 +442,7 @@ std::vector<RStat> Client::Impl::getDirectoryContents(const std::wstring &wpath)
     Fid new_fid = doWalk(wpath);
 
     FileMode file_mode(FileMode::Access::Read);
-    ParsedROpen ropen = doOpen(new_fid, file_mode);
+    doOpen(new_fid, file_mode);
 
     auto readData = [&](uint64_t offset) { return doRead(new_fid, offset, 65535); };
 
@@ -497,9 +504,7 @@ Fid Client::Impl::doWalk(const std::wstring &wpath)
         spdlog::debug(L"Server responded to TWalk with RWalk");
         return new_fid;
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TWalk sent, with ename: {}", w_ename);
+        logErrorReceivedFor(response_payload, L"TWalk");
         throw ErrorMessageReceived();
     } else {
         spdlog::error(L"Unexpected message received while waiting for response to TWalk");
@@ -532,9 +537,7 @@ ParsedROpen Client::Impl::doOpen(Fid fid, FileMode file_mode)
         spdlog::debug(L"Server responded to TOpen with ROpen");
         return std::get<ParsedROpen>(response_payload);
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TOpen sent, with ename: {}", w_ename);
+        logErrorReceivedFor(response_payload, L"TOpen");
         throw ErrorMessageReceived();
     } else {
         spdlog::error(L"Unexpected message received while waiting for response to TOpen");
@@ -562,9 +565,7 @@ ParsedRStat Client::Impl::doStat(Fid fid)
         spdlog::debug(L"Server responded to TStat with RStat");
         return std::get<ParsedRStat>(response_payload);
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TStat sent, with ename: {}", w_ename);
+        logErrorReceivedFor(response_payload, L"TStat");
         throw ErrorMessageReceived();
     } else {
         spdlog::error(L"Unexpected message received while waiting for response to TStat");

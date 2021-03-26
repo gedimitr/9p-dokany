@@ -31,7 +31,7 @@ namespace {
 class CommandLineConfigException : public std::exception
 {
 public:
-    CommandLineConfigException(const std::wstring &slogan) : slogan(slogan)
+    explicit CommandLineConfigException(const std::wstring &slogan) : slogan(slogan)
     {}
 
     std::wstring slogan;
