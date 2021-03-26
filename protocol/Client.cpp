@@ -328,9 +328,7 @@ void Client::Impl::doVersionHandshake()
 
         m_max_message_size = min(m_max_message_size, rversion.msize);
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TVersion sent, with ename: {}", w_ename);
+        logErrorReceivedFor(response_payload, L"TVersion");
         throw VersionHandshakeError();
     } else {
         spdlog::error(L"Unexpected message received while waiting for response to TVersion");
@@ -475,7 +473,7 @@ int64_t Client::Impl::readFile(const std::wstring &wpath, uint64_t offset, void 
     Fid new_fid = doWalk(wpath);
 
     FileMode file_mode(FileMode::Access::Read);
-    ParsedROpen ropen = doOpen(new_fid, file_mode);
+    doOpen(new_fid, file_mode);
 
     uint32_t buffer_length32 = gsl::narrow<uint32_t>(buffer_length);
     ParsedRRead parsed_rread = doRead(new_fid, offset, buffer_length32);
@@ -592,9 +590,7 @@ ParsedRRead Client::Impl::doRead(Fid fid, uint64_t offset, uint32_t count)
         spdlog::debug(L"Server responded to TRead with RRead");
         return std::get<ParsedRRead>(response_payload);
     } else if (std::holds_alternative<ParsedRError>(response_payload)) {
-        const ParsedRError &rerror = std::get<ParsedRError>(response_payload);
-        std::wstring w_ename = convertUtf8ToWstring(rerror.ename);
-        spdlog::error(L"Server responded with RError to TRead sent, with ename: {}", w_ename);
+        logErrorReceivedFor(response_payload, L"TRead");
         throw ErrorMessageReceived();
     } else {
         spdlog::error(L"Unexpected message received while waiting for response to TOpen");
