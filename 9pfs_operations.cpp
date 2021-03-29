@@ -64,7 +64,14 @@ NTSTATUS DOKAN_CALLBACK ninepfs_readfile(LPCWSTR file_name, LPVOID buffer, DWORD
     spdlog::info(L"ReadFile: {}, buffer_length: {}, read_length: {}, offset: {}", file_name, buffer_length, *read_length, offset);
     Client *ninep_client = getContextClient(dokan_file_info);
     *read_length = ninep_client->readFile(file_name, offset, buffer, buffer_length);
-    return STATUS_SUCCESS;
+
+    if (*read_length > 0) {
+        return STATUS_SUCCESS;
+    } else if (read_length == 0) {
+        return STATUS_END_OF_FILE;
+    } else {
+        return STATUS_OBJECT_NAME_NOT_FOUND;
+    }
 }
 
 NTSTATUS DOKAN_CALLBACK ninepfs_writefile(LPCWSTR FileName, LPCVOID Buffer, DWORD NumberOfBytesToWrite,
