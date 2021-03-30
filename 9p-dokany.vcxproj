@@ -98,7 +98,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="9pfs.cpp" />
     <ClCompile Include="9pfs_operations.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="main.cpp" />
@@ -111,7 +110,6 @@
     <ClCompile Include="utils\TextUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="9pfs.h" />
     <ClInclude Include="9pfs_operations.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="protocol\Client.h" />
