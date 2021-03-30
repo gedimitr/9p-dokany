@@ -3,5 +3,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b911ca08d0284b648f882b7dca730868)](https://www.codacy.com/gh/gedimitr/9p-dokany/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=gedimitr/9p-dokany&amp;utm_campaign=Badge_Grade)
 
+[![CodeFactor](https://www.codefactor.io/repository/github/gedimitr/9p-dokany/badge/master)](https://www.codefactor.io/repository/github/gedimitr/9p-dokany/overview/master)
+
 ## What is 9p-dokany
 The 9p-dokany project implements a 9P client which uses the dokany framework in order to mount the corresponding virtual filesystem in Windows.
